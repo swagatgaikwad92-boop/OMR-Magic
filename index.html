@@ -854,7 +854,7 @@ input, select {
         <span class="corner br"></span>
         <div class="scan-sheen"></div>
       </div>
-      <p class="scan-instruction">Align the OMR inside the frame</p>
+      <p class="scan-instruction" id="scan-instruction-text">Align the OMR inside the frame</p>
       <div class="align-meter"><div class="align-meter-fill" id="align-meter-fill"></div></div>
       <div id="camera-fallback" class="camera-fallback">
         <p>Camera not available.</p>
@@ -1131,12 +1131,23 @@ const SheetLayout = (() => {
   const HEIGHT = 1754;
   const MARGIN = 64;
   const MARKER_SIZE = 36;
-  const HEADER_HEIGHT = 190;
+  const HEADER_HEIGHT = 150;
   const MAX_COLUMNS = 5;
   const COLUMN_GAP = 24;
   const OPTION_GAP = 34;
   const BUBBLE_RADIUS = 12;
   const LABEL_GUTTER = 54;
+
+  // Roll-number bubble grid: one column of 0-9 bubbles per digit, sat
+  // just under the header. Scanned the same way as question bubbles but
+  // through its own sampling pass, so a smudge on Q1 can never bleed
+  // into the roll number and vice versa.
+  const ROLL_DIGITS = 4;
+  const ROLL_BUBBLE_R = 10;
+  const ROLL_ROW_GAP = 21;
+  const ROLL_COL_GAP = 40;
+  const ROLL_GRID_TOP_PAD = 34;
+  const ROLL_GRID_HEIGHT = ROLL_GRID_TOP_PAD + ROLL_ROW_GAP * 10 + 16;
 
   function markerPositions() {
     const half = MARKER_SIZE / 2;
@@ -1148,18 +1159,40 @@ const SheetLayout = (() => {
     ];
   }
 
+  function rollGridLayout(contentLeft, rollTop) {
+    const labelGutter = 96;
+    const columns = [];
+    for (let d = 0; d < ROLL_DIGITS; d++) {
+      const colX = contentLeft + labelGutter + d * ROLL_COL_GAP;
+      const bubbles = [];
+      for (let v = 0; v <= 9; v++) {
+        bubbles.push({
+          value: String(v),
+          x: colX,
+          y: rollTop + ROLL_GRID_TOP_PAD + v * ROLL_ROW_GAP,
+          r: ROLL_BUBBLE_R,
+        });
+      }
+      columns.push({ digitIndex: d, x: colX, bubbles });
+    }
+    return { top: rollTop, labelX: contentLeft, labelGutter, digitCount: ROLL_DIGITS, columns };
+  }
+
   /**
    * Lays out `questionCount` questions, each with `optionCount` bubbles,
    * into up to MAX_COLUMNS columns that fill the printable area between
-   * the corner markers. Returns absolute pixel centers for every bubble.
+   * the corner markers, below the roll-number grid. Returns absolute
+   * pixel centers for every bubble.
    */
   function computeLayout(questionCount, optionCount) {
     const q = Math.max(0, questionCount | 0);
     const opts = Math.max(2, optionCount | 0);
-    const contentTop = MARGIN + HEADER_HEIGHT;
-    const contentBottom = HEIGHT - MARGIN - MARKER_SIZE - 20;
     const contentLeft = MARGIN + MARKER_SIZE + 20;
     const contentRight = WIDTH - MARGIN - MARKER_SIZE - 20;
+    const rollTop = MARGIN + HEADER_HEIGHT;
+    const rollGrid = rollGridLayout(contentLeft, rollTop);
+    const contentTop = rollTop + ROLL_GRID_HEIGHT;
+    const contentBottom = HEIGHT - MARGIN - MARKER_SIZE - 20;
     const usableWidth = contentRight - contentLeft;
     const usableHeight = contentBottom - contentTop;
 
@@ -1195,13 +1228,14 @@ const SheetLayout = (() => {
       markerSize: MARKER_SIZE,
       markers: markerPositions(),
       headerHeight: HEADER_HEIGHT,
+      rollGrid,
       questions,
       columns,
       rows,
     };
   }
 
-  return { WIDTH, HEIGHT, MARGIN, MARKER_SIZE, computeLayout, markerPositions };
+  return { WIDTH, HEIGHT, MARGIN, MARKER_SIZE, ROLL_DIGITS, computeLayout, markerPositions };
 })();
 
 const AnswerKey = (() => {
@@ -1259,11 +1293,28 @@ const AnswerKey = (() => {
     ctx.lineTo(layout.margin + layout.markerSize + 420, fieldY + 4);
     ctx.stroke();
 
-    ctx.fillText('Roll No:', layout.margin + layout.markerSize + 460, fieldY);
-    ctx.beginPath();
-    ctx.moveTo(layout.margin + layout.markerSize + 550, fieldY + 4);
-    ctx.lineTo(layout.margin + layout.markerSize + 780, fieldY + 4);
-    ctx.stroke();
+    // Roll number bubble grid - one 0-9 column per digit, sampled
+    // independently from the question grid so the two never interfere.
+    ctx.textBaseline = 'alphabetic';
+    ctx.font = '600 16px -apple-system, "SF Pro Display", Segoe UI, sans-serif';
+    ctx.fillText('Roll No.', layout.rollGrid.labelX, layout.rollGrid.top + 16);
+    ctx.font = '400 11px -apple-system, "SF Pro Display", Segoe UI, sans-serif';
+    ctx.textAlign = 'center';
+    layout.rollGrid.columns.forEach((col) => {
+      ctx.fillText(`D${col.digitIndex + 1}`, col.x, layout.rollGrid.top + 16);
+      col.bubbles.forEach((b) => {
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+        ctx.lineWidth = 1.6;
+        ctx.strokeStyle = '#0b1c22';
+        ctx.stroke();
+        ctx.font = '500 11px -apple-system, "SF Pro Display", Segoe UI, sans-serif';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(b.value, b.x, b.y + 0.5);
+        ctx.textBaseline = 'alphabetic';
+      });
+    });
+    ctx.textAlign = 'left';
 
     // Bubble grid
     layout.questions.forEach((q) => {
@@ -1360,12 +1411,39 @@ const ImageProcessor = (() => {
   /**
    * Searches one quadrant of the image for the darkest small square blob
    * (an alignment marker). `region` is {x0,y0,x1,y1} in pixel space.
+   *
+   * Two ideas make this far more robust than a plain "find the darkest
+   * window" scan:
+   *   1. Adaptive threshold - computed from THIS region's own brightness
+   *      instead of one fixed number, so it still works in shadow, warm
+   *      indoor light, or a slightly washed-out photo.
+   *   2. "Is it actually a small mark on paper?" check - a real corner
+   *      square sits on a bright background, so the ring immediately
+   *      outside the darkest window must be noticeably brighter than the
+   *      window itself. Without this check, any large dark area in shot
+   *      (a phone case, a table shadow, a tablet bezel behind the sheet)
+   *      wins as the "darkest blob" and the whole scan goes wrong even
+   *      though no real marker is anywhere near it.
    */
   function findMarkerInRegion(gray, width, height, region) {
     const win = Math.max(14, Math.round(Math.min(width, height) * 0.028));
     const step = Math.max(2, Math.round(win / 3));
-    let best = null;
 
+    // Pass 1: regional brightness stats, to set an adaptive threshold.
+    let regionSum = 0;
+    let regionCount = 0;
+    for (let y = region.y0; y < region.y1; y += 4) {
+      const row = Math.floor(y) * width;
+      for (let x = region.x0; x < region.x1; x += 4) {
+        regionSum += gray[row + Math.floor(x)];
+        regionCount++;
+      }
+    }
+    if (!regionCount) return null;
+    const regionMean = regionSum / regionCount;
+    const darkCap = Math.max(70, Math.min(150, regionMean - 25));
+
+    let best = null;
     for (let y = region.y0; y + win < region.y1; y += step) {
       for (let x = region.x0; x + win < region.x1; x += step) {
         let sum = 0;
@@ -1379,10 +1457,34 @@ const ImageProcessor = (() => {
         if (!best || avg < best.avg) best = { x, y, avg };
       }
     }
-    if (!best || best.avg > 130) return null; // nothing dark enough to be a marker
+    if (!best || best.avg > darkCap) return null; // nothing dark enough to be a marker
+
+    // Reject the "big uniform dark area" case: sample a ring just
+    // outside the candidate window and require it to be meaningfully
+    // brighter (i.e. this is a small mark on a light page, not the edge
+    // of a large dark object).
+    const ringPad = Math.round(win * 0.9);
+    let ringSum = 0;
+    let ringCount = 0;
+    const rx0 = Math.max(0, best.x - ringPad);
+    const rx1 = Math.min(width - 1, best.x + win + ringPad);
+    const ry0 = Math.max(0, best.y - ringPad);
+    const ry1 = Math.min(height - 1, best.y + win + ringPad);
+    for (let y = ry0; y < ry1; y += 3) {
+      const insideY = y >= best.y - 2 && y <= best.y + win + 2;
+      const row = y * width;
+      for (let x = rx0; x < rx1; x += 3) {
+        const insideX = x >= best.x - 2 && x <= best.x + win + 2;
+        if (insideX && insideY) continue; // skip the marker window itself
+        ringSum += gray[row + x];
+        ringCount++;
+      }
+    }
+    const ringMean = ringCount ? ringSum / ringCount : 255;
+    if (ringMean - best.avg < 35) return null; // not a small mark on a light background
 
     // Refine to the centroid of dark pixels inside the winning window for sub-pixel accuracy.
-    const threshold = Math.min(150, best.avg + 40);
+    const threshold = Math.min(darkCap + 40, best.avg + 40);
     let sx = 0;
     let sy = 0;
     let count = 0;
@@ -1402,18 +1504,22 @@ const ImageProcessor = (() => {
       }
     }
     if (count < 8) return null;
-    return { x: sx / count, y: sy / count, confidence: Math.max(0, Math.min(1, (130 - best.avg) / 130)) };
+    const confidence = Math.max(0, Math.min(1, (ringMean - best.avg) / 120));
+    return { x: sx / count, y: sy / count, confidence };
   }
 
   /**
    * Looks for all four corner markers within the expected quadrants of
-   * the captured photo. Returns null (never guesses) if any is missing.
+   * the captured photo. Unlike a plain pass/fail check, it always
+   * returns what it found for every corner (null for a corner it
+   * couldn't find), so the live camera view can tell the user exactly
+   * which corner is missing instead of a generic error.
    */
-  function detectMarkers(imageData) {
+  function detectMarkersDetailed(imageData) {
     const { gray, width, height } = toGrayscale(imageData);
     const midX = width / 2;
     const midY = height / 2;
-    const pad = 0.12; // markers should sit within ~12% of each edge
+    const pad = 0.16; // markers should sit within ~16% of each edge
 
     const quadrants = {
       topLeft: { x0: 0, y0: 0, x1: midX + width * pad, y1: midY + height * pad },
@@ -1424,10 +1530,18 @@ const ImageProcessor = (() => {
 
     const found = {};
     for (const key of Object.keys(quadrants)) {
-      const m = findMarkerInRegion(gray, width, height, quadrants[key]);
-      if (!m) return null;
-      found[key] = m;
+      found[key] = findMarkerInRegion(gray, width, height, quadrants[key]);
     }
+    return found;
+  }
+
+  /**
+   * Looks for all four corner markers. Returns null (never guesses) if
+   * any is missing.
+   */
+  function detectMarkers(imageData) {
+    const found = detectMarkersDetailed(imageData);
+    if (Object.values(found).some((m) => !m)) return null;
     return found;
   }
 
@@ -1592,6 +1706,7 @@ const ImageProcessor = (() => {
     contrastScore,
     assessQuality,
     detectMarkers,
+    detectMarkersDetailed,
     computeHomography,
     applyHomography,
     correctPerspective,
@@ -1684,6 +1799,41 @@ const OMRScanner = (() => {
     });
   }
 
+  /**
+   * Reads the roll-number bubble grid (one 0-9 column per digit).
+   * Each digit is scored independently, exactly like a question. Returns
+   * { value, digits, confidence } where value is null unless every
+   * digit resolved to exactly one filled bubble.
+   */
+  function analyzeRollNumber(correctedCanvas, layout) {
+    const ctx = correctedCanvas.getContext('2d');
+    const imageData = ctx.getImageData(0, 0, correctedCanvas.width, correctedCanvas.height);
+    const { gray, width, height } = ImageProcessor.toGrayscale(imageData);
+
+    const digits = layout.rollGrid.columns.map((col) => {
+      const fills = col.bubbles.map((b) => ({
+        value: b.value,
+        darkness: 255 - sampleBubble(gray, width, height, b),
+      }));
+      fills.sort((a, b) => b.darkness - a.darkness);
+      const darkest = fills[0];
+      const second = fills[1] || { darkness: 0 };
+      const marked = fills.filter((f) => 255 - f.darkness < FILL_THRESHOLD);
+
+      if (marked.length === 0) return { value: null, status: 'blank', confidence: 0 };
+      if (marked.length > 1 && darkest.darkness - second.darkness < MULTI_MARK_GAP) {
+        return { value: null, status: 'multiple', confidence: 0.2 };
+      }
+      const margin = darkest.darkness - second.darkness;
+      return { value: darkest.value, status: 'filled', confidence: Math.max(0.35, Math.min(1, margin / 90)) };
+    });
+
+    const resolved = digits.every((d) => d.status === 'filled');
+    const value = resolved ? digits.map((d) => d.value).join('') : null;
+    const confidence = digits.reduce((s, d) => s + d.confidence, 0) / (digits.length || 1);
+    return { value, digits, confidence: Number(confidence.toFixed(2)) };
+  }
+
   /** Simple perceptual hash of the corrected sheet, used for duplicate-scan warnings. */
   function hashCanvas(canvas) {
     const small = document.createElement('canvas');
@@ -1713,12 +1863,13 @@ const OMRScanner = (() => {
     const { canvas: corrected, markerConfidence } = ImageProcessor.correctPerspective(imageData);
     const layout = SheetLayout.computeLayout(test.answerKey.length, test.optionCount);
     const answers = analyzeBubbles(corrected, layout);
+    const rollNumber = analyzeRollNumber(corrected, layout);
     const sheetHash = hashCanvas(corrected);
 
-    return { answers, quality, markerConfidence, sheetHash, correctedCanvas: corrected };
+    return { answers, quality, markerConfidence, sheetHash, correctedCanvas: corrected, rollNumber };
   }
 
-  return { analyzeBubbles, sampleBubble, hashCanvas, scan, FILL_THRESHOLD };
+  return { analyzeBubbles, analyzeRollNumber, sampleBubble, hashCanvas, scan, FILL_THRESHOLD };
 })();
 
 
@@ -2041,20 +2192,79 @@ const GradingEngine = (() => {
     state.autoCaptureArmed = false;
   }
 
+  // The on-screen brackets are drawn with CSS (`.scan-frame { inset: 8% 10%; }`
+  // inside a `.scan-stage` box that is forced to a 0.75:1 aspect ratio and
+  // filled with `object-fit: cover`). Previously the JS never accounted for
+  // that: it read markers from the *entire* raw video frame, which usually
+  // includes a lot of background outside the brackets (a table, a tablet
+  // bezel, etc.) - exactly what was confusing the marker search in the
+  // screenshot. This reproduces the same crop math CSS uses, in video pixel
+  // coordinates, so "what the user sees in the brackets" and "what gets
+  // analyzed" are finally the same rectangle.
+  function getGuideRectInVideo(video) {
+    const vw = video.videoWidth;
+    const vh = video.videoHeight;
+    if (!vw || !vh) return null;
+    const stageAspect = 0.75; // matches .scan-stage { aspect-ratio: 0.75 / 1 }
+    let coverW, coverH, coverX, coverY;
+    if (vw / vh > stageAspect) {
+      coverH = vh;
+      coverW = vh * stageAspect;
+      coverX = (vw - coverW) / 2;
+      coverY = 0;
+    } else {
+      coverW = vw;
+      coverH = vw / stageAspect;
+      coverX = 0;
+      coverY = (vh - coverH) / 2;
+    }
+    // matches .scan-frame { inset: 8% 10%; }
+    return {
+      x: coverX + coverW * 0.1,
+      y: coverY + coverH * 0.08,
+      w: coverW * 0.8,
+      h: coverH * 0.84,
+    };
+  }
+
+  const CORNER_LABEL = { topLeft: 'top-left', topRight: 'top-right', bottomLeft: 'bottom-left', bottomRight: 'bottom-right' };
+
+  /** Turns per-corner marker detection into a short, actionable instruction. */
+  function describeAlignment(found) {
+    const missing = Object.keys(found).filter((k) => !found[k]);
+    if (missing.length >= 3) return { text: 'Place the whole answer sheet inside the frame', score: 0 };
+    if (missing.length > 0) {
+      const names = missing.map((k) => CORNER_LABEL[k]).join(' and ');
+      return { text: `Sheet's ${names} corner is cut off — reposition`, score: 0.15 };
+    }
+    const avgConfidence =
+      (found.topLeft.confidence + found.topRight.confidence + found.bottomLeft.confidence + found.bottomRight.confidence) / 4;
+    if (avgConfidence < 0.4) return { text: 'Getting there — hold the sheet flat and steady', score: avgConfidence };
+    return { text: 'Looks good — hold steady…', score: avgConfidence };
+  }
+
   let consecutiveAligned = 0;
   function runAlignmentLoop() {
     if (!state.autoCaptureArmed) return;
     const video = document.getElementById('camera-feed');
     const meter = document.getElementById('align-meter-fill');
-    if (video.readyState >= 2 && video.videoWidth) {
+    const instruction = document.getElementById('scan-instruction-text');
+    const rect = video.readyState >= 2 ? getGuideRectInVideo(video) : null;
+
+    if (rect) {
+      const probeW = 260;
+      const probeH = Math.round(probeW * (rect.h / rect.w));
       const probe = document.createElement('canvas');
-      probe.width = 260;
-      probe.height = Math.round((260 * video.videoHeight) / video.videoWidth);
-      probe.getContext('2d').drawImage(video, 0, 0, probe.width, probe.height);
-      const data = probe.getContext('2d').getImageData(0, 0, probe.width, probe.height);
-      const score = ImageProcessor.quickAlignmentScore(data);
+      probe.width = probeW;
+      probe.height = probeH;
+      probe.getContext('2d').drawImage(video, rect.x, rect.y, rect.w, rect.h, 0, 0, probeW, probeH);
+      const data = probe.getContext('2d').getImageData(0, 0, probeW, probeH);
+      const found = ImageProcessor.detectMarkersDetailed(data);
+      const { text, score } = describeAlignment(found);
+
       meter.style.width = `${Math.round(score * 100)}%`;
       meter.classList.toggle('align-good', score > 0.55);
+      if (instruction) instruction.textContent = text;
 
       if (score > 0.55) {
         consecutiveAligned++;
@@ -2073,9 +2283,18 @@ const GradingEngine = (() => {
   function captureFromVideo() {
     const video = document.getElementById('camera-feed');
     const canvas = document.getElementById('capture-canvas');
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+    const rect = getGuideRectInVideo(video);
+    if (rect) {
+      // Capture exactly what the on-screen brackets show, not the whole
+      // raw frame - see getGuideRectInVideo() above.
+      canvas.width = Math.round(rect.w);
+      canvas.height = Math.round(rect.h);
+      canvas.getContext('2d').drawImage(video, rect.x, rect.y, rect.w, rect.h, 0, 0, canvas.width, canvas.height);
+    } else {
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+    }
     handleCapturedCanvas(canvas);
   }
 
@@ -2123,6 +2342,15 @@ const GradingEngine = (() => {
         banner.hidden = true;
       }
 
+      // If the roll-number bubble grid resolved cleanly and the teacher
+      // didn't type one in by hand, use it - one less manual step, and
+      // it's read from its own dedicated bubbles so it can never be
+      // confused with question 1's answer.
+      if (scan.rollNumber && scan.rollNumber.value && !state.lastStudent.roll) {
+        state.lastStudent.roll = scan.rollNumber.value;
+        showToast(`Roll no. ${scan.rollNumber.value} detected from the sheet.`);
+      }
+
       runLiveCheck(test, scan);
     } catch (err) {
       console.error(err);
@@ -2130,7 +2358,7 @@ const GradingEngine = (() => {
       banner.className = 'quality-banner error';
       banner.textContent =
         err.code === 'NO_MARKERS'
-          ? "Couldn't find all four corner markers. Keep the whole sheet in frame and try again."
+          ? "Couldn't find all four corner squares. Make sure all four are visible and uncovered, then keep the sheet inside the brackets and try again."
           : 'Could not read this sheet. Try a flatter, better-lit photo.';
       startCamera();
     }

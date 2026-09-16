@@ -13,7 +13,7 @@
  * install-prompt requirements.
  */
 
-const CACHE_NAME = 'omr-magic-v2';
+const CACHE_NAME = 'omr-magic-v3';
 const APP_SHELL = ['./', './index.html'];
 
 self.addEventListener('install', (event) => {
