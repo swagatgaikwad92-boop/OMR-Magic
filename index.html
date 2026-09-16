@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>OMR Magic</title>
+<meta name="description" content="OMR Magic — a quiet, reviewable way to grade photographed answer sheets." />
+<meta name="theme-color" content="#0b2430" />
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="icon" href="icons/icon-192.png" />
+<link rel="apple-touch-icon" href="icons/icon-192.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="OMR Magic" />
+<link rel="stylesheet" href="styles/core.css" />
+<link rel="stylesheet" href="styles/glass.css" />
+<link rel="stylesheet" href="styles/scanner.css" />
+</head>
+<body>
+
+<div class="bubble-field" aria-hidden="true">
+  <span class="bubble b1"></span>
+  <span class="bubble b2"></span>
+  <span class="bubble b3"></span>
+  <span class="bubble b4"></span>
+  <span class="bubble b5"></span>
+</div>
+
+<main id="app">
+
+  <!-- ============ HOME ============ -->
+  <section class="screen" id="screen-home" data-screen="home">
+    <div class="home-hero">
+      <div class="brand-mark glass-panel">◎</div>
+      <h1 class="home-title">OMR Magic</h1>
+      <p class="home-subtitle">Smart OMR checking.</p>
+      <button class="btn btn-primary btn-large" id="btn-start-test">Start a test →</button>
+    </div>
+
+    <div class="feature-row">
+      <div class="feature-pill glass-panel"><span>⚡</span> Live checking</div>
+      <div class="feature-pill glass-panel"><span>📷</span> Camera scanning</div>
+      <div class="feature-pill glass-panel"><span>📊</span> Instant results</div>
+    </div>
+
+    <div class="section-block">
+      <div class="section-heading">
+        <h2>Recent tests</h2>
+      </div>
+      <div id="test-list" class="test-list"></div>
+      <p class="empty-hint" id="test-list-empty">No tests yet. Start one above to create an answer key.</p>
+    </div>
+  </section>
+
+  <!-- ============ NEW TEST SHEET ============ -->
+  <section class="screen" id="screen-new-test" data-screen="new-test">
+    <header class="screen-header">
+      <button class="btn-icon" data-back>‹</button>
+      <h1>New test</h1>
+      <span class="screen-header-spacer"></span>
+    </header>
+    <div class="glass-panel form-card">
+      <label class="field">
+        <span>Test name</span>
+        <input type="text" id="input-test-name" placeholder="e.g. Grade 8 Science — Unit 4" />
+      </label>
+      <label class="field">
+        <span>Number of questions</span>
+        <input type="number" id="input-question-count" min="1" max="120" value="10" />
+      </label>
+      <label class="field">
+        <span>Options per question</span>
+        <select id="input-option-count">
+          <option value="3">A B C</option>
+          <option value="4" selected>A B C D</option>
+          <option value="5">A B C D E</option>
+        </select>
+      </label>
+      <div class="field-row">
+        <label class="field">
+          <span>Marks per question</span>
+          <input type="number" id="input-marks" min="0" step="0.5" value="1" />
+        </label>
+        <label class="field">
+          <span>Negative marking</span>
+          <input type="number" id="input-negative" min="0" step="0.25" value="0" />
+        </label>
+      </div>
+      <button class="btn btn-primary btn-large" id="btn-create-test">Create answer key →</button>
+    </div>
+  </section>
+
+  <!-- ============ ANSWER KEY ============ -->
+  <section class="screen" id="screen-answerkey" data-screen="answerkey">
+    <header class="screen-header">
+      <button class="btn-icon" data-back>‹</button>
+      <h1 id="answerkey-title">Answer Key</h1>
+      <span class="screen-header-spacer"></span>
+    </header>
+
+    <div class="glass-panel upload-card">
+      <p class="upload-label">Upload the question paper (optional)</p>
+      <div class="upload-row">
+        <label class="btn btn-ghost" for="input-question-paper">Upload image or PDF</label>
+        <input type="file" id="input-question-paper" accept="image/png,image/jpeg,image/webp,application/pdf" hidden />
+        <span id="question-paper-name" class="upload-filename"></span>
+      </div>
+      <p class="hint-text" id="parser-hint">AI answer suggestions are coming soon. Approve every answer manually below — OMR Magic never trusts a guess silently.</p>
+    </div>
+
+    <div class="section-heading">
+      <h2>Fill in every answer</h2>
+      <span class="progress-chip" id="key-progress">0 / 0</span>
+    </div>
+
+    <div id="answerkey-list" class="answerkey-list"></div>
+
+    <div class="sticky-footer">
+      <button class="btn btn-secondary" id="btn-download-template">Download printable sheet</button>
+      <button class="btn btn-primary" id="btn-approve-key" disabled>Approve answer key & continue</button>
+    </div>
+  </section>
+
+  <!-- ============ SCANNER ============ -->
+  <section class="screen" id="screen-scanner" data-screen="scanner">
+    <header class="screen-header">
+      <button class="btn-icon" data-back>‹</button>
+      <h1>Scan OMR</h1>
+      <span class="screen-header-spacer"></span>
+    </header>
+
+    <div class="glass-panel student-card">
+      <label class="field field-inline">
+        <span>Student name</span>
+        <input type="text" id="input-student-name" placeholder="Optional" />
+      </label>
+      <label class="field field-inline">
+        <span>Roll no.</span>
+        <input type="text" id="input-student-roll" placeholder="Optional" />
+      </label>
+    </div>
+
+    <div class="scan-stage">
+      <video id="camera-feed" autoplay playsinline muted></video>
+      <canvas id="capture-canvas" hidden></canvas>
+      <div class="scan-frame">
+        <span class="corner tl"></span>
+        <span class="corner tr"></span>
+        <span class="corner bl"></span>
+        <span class="corner br"></span>
+        <div class="scan-sheen"></div>
+      </div>
+      <p class="scan-instruction">Align the OMR inside the frame</p>
+      <div class="align-meter"><div class="align-meter-fill" id="align-meter-fill"></div></div>
+      <div id="camera-fallback" class="camera-fallback">
+        <p>Camera not available.</p>
+      </div>
+    </div>
+
+    <div id="scan-quality-banner" class="quality-banner" hidden></div>
+
+    <div class="scan-controls">
+      <label class="btn btn-ghost" for="input-choose-photo">Choose photo</label>
+      <input type="file" id="input-choose-photo" accept="image/*" hidden />
+      <button class="capture-btn" id="btn-capture" aria-label="Capture photo"></button>
+      <span class="scan-controls-spacer"></span>
+    </div>
+  </section>
+
+  <!-- ============ LIVE CHECK ============ -->
+  <section class="screen" id="screen-livecheck" data-screen="livecheck">
+    <header class="screen-header">
+      <h1>Live Checking</h1>
+      <span class="screen-header-spacer"></span>
+    </header>
+
+    <div class="glass-panel live-progress-card">
+      <p class="live-progress-count"><span id="live-progress-current">0</span> / <span id="live-progress-total">0</span> checked</p>
+      <div class="live-progress-track"><div class="live-progress-fill" id="live-progress-fill"></div></div>
+    </div>
+
+    <div id="live-check-list" class="live-check-list"></div>
+  </section>
+
+  <!-- ============ RESULT ============ -->
+  <section class="screen" id="screen-result" data-screen="result">
+    <header class="screen-header">
+      <h1>Result</h1>
+      <span class="screen-header-spacer"></span>
+    </header>
+
+    <div class="glass-panel result-hero">
+      <p class="result-score" id="result-score">0 / 0</p>
+      <p class="result-percentage" id="result-percentage">0%</p>
+      <div class="result-stats">
+        <div class="stat stat-correct"><span id="stat-correct">0</span><small>Correct</small></div>
+        <div class="stat stat-wrong"><span id="stat-wrong">0</span><small>Wrong</small></div>
+        <div class="stat stat-unclear"><span id="stat-unclear">0</span><small>Unclear</small></div>
+      </div>
+    </div>
+
+    <div id="duplicate-banner" class="quality-banner" hidden></div>
+
+    <div class="section-heading">
+      <h2>Question by question</h2>
+      <span class="hint-text">Tap an unclear or wrong answer to correct it</span>
+    </div>
+    <div id="result-list" class="result-list"></div>
+
+    <div class="sticky-footer">
+      <button class="btn btn-secondary" id="btn-scan-another">Check another sheet</button>
+      <button class="btn btn-primary" id="btn-new-test">New test</button>
+    </div>
+  </section>
+
+  <!-- ============ TEST DETAIL ============ -->
+  <section class="screen" id="screen-test-detail" data-screen="test-detail">
+    <header class="screen-header">
+      <button class="btn-icon" data-back>‹</button>
+      <h1 id="test-detail-title">Test</h1>
+      <span class="screen-header-spacer"></span>
+    </header>
+    <div class="glass-panel test-detail-summary" id="test-detail-summary"></div>
+    <div class="section-heading"><h2>Students checked</h2></div>
+    <div id="test-detail-results" class="result-list"></div>
+    <div class="sticky-footer">
+      <button class="btn btn-secondary" id="btn-detail-template">Download sheet</button>
+      <button class="btn btn-primary" id="btn-detail-scan">Scan another</button>
+    </div>
+  </section>
+
+</main>
+
+<div class="toast" id="toast" hidden></div>
+
+<script src="scripts/storage.js"></script>
+<script src="scripts/question-parser.js"></script>
+<script src="scripts/answer-key.js"></script>
+<script src="scripts/image-processing.js"></script>
+<script src="scripts/omr-scanner.js"></script>
+<script src="scripts/grading.js"></script>
+<script src="scripts/app.js"></script>
+</body>
+</html>
