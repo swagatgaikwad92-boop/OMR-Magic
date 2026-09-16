@@ -4,6 +4,51 @@ A quiet, reviewable way to grade photographed answer sheets — built as a
 fully static, installable PWA. No Node.js, no build step, no backend.
 Open `index.html` (or deploy the folder as-is) and it works.
 
+> **`index.html` is fully self-contained.** All CSS and JavaScript are
+> inlined directly into it, so the app renders and works correctly even
+> if `styles/` or `scripts/` never make it into your deployment (a common
+> issue when dragging a folder into GitHub's web upload UI, which
+> sometimes drops subfolders silently). The `styles/` and `scripts/`
+> folders are kept in this project as the readable, editable source —
+> edit those files, then re-inline them (see "Editing the code" below)
+> rather than editing the giant blocks inside `index.html` directly.
+
+## Editing the code
+
+If you change anything in `styles/*.css` or `scripts/*.js`, re-generate
+the inlined copy so `index.html` stays in sync:
+
+```bash
+python3 - << 'EOF'
+import re
+html = open('index.html', encoding='utf-8').read()
+css_files = ['styles/core.css', 'styles/glass.css', 'styles/scanner.css']
+js_files = ['scripts/storage.js','scripts/question-parser.js','scripts/answer-key.js',
+            'scripts/image-processing.js','scripts/omr-scanner.js','scripts/grading.js','scripts/app.js']
+css_blob = "\n\n".join(open(f, encoding='utf-8').read() for f in css_files)
+js_blob = "\n\n".join(open(f, encoding='utf-8').read() for f in js_files)
+html = re.sub(r'<style>.*?</style>\n', f'<style>\n{css_blob}\n</style>\n', html, flags=re.S)
+html = re.sub(r'<script>.*?</script>\n</body>', f'<script>\n{js_blob}\n</script>\n</body>', html, flags=re.S)
+open('index.html', 'w', encoding='utf-8').write(html)
+EOF
+```
+
+## Deploying without surprises
+
+Whichever way you push this to GitHub Pages, only `index.html` (plus
+optionally `manifest.webmanifest`, `service-worker.js`, and `icons/` for
+installability) needs to actually arrive in the repo for the app to
+render and work correctly:
+
+- **Easiest / least error-prone:** use `git` from a terminal
+  (`git add -A && git commit -m "deploy" && git push`) rather than the
+  GitHub website's drag-and-drop uploader — it always preserves folder
+  structure.
+- **Using the website uploader:** drag the *contents* of `OMR-Magic/`
+  (not the `OMR-Magic` folder itself) into the upload box, and confirm
+  `styles/` and `scripts/` appear as folders in the repo afterward before
+  assuming a code bug.
+
 ## Workflow
 
 ```

@@ -12,9 +12,713 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="apple-mobile-web-app-title" content="OMR Magic" />
-<link rel="stylesheet" href="styles/core.css" />
-<link rel="stylesheet" href="styles/glass.css" />
-<link rel="stylesheet" href="styles/scanner.css" />
+<style>
+/* ===========================================================
+   core.css — layout, typography, screen structure, base tokens
+   =========================================================== */
+
+:root {
+  --font-display: -apple-system, "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-body: -apple-system, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+
+  --ink: #0b2430;
+  --ink-soft: #4c6570;
+  --mist: #eaf3f5;
+
+  --deep-1: #0b2430;
+  --deep-2: #123b47;
+  --deep-3: #19555f;
+
+  --accent: #4fd1ff;
+  --accent-2: #7c9cff;
+  --silver: #cfe3e8;
+
+  --success: #34d399;
+  --danger: #fb7185;
+  --amber: #fbbf24;
+
+  --radius-lg: 28px;
+  --radius-md: 18px;
+  --radius-sm: 12px;
+
+  --shadow-soft: 0 20px 60px rgba(4, 20, 26, 0.35);
+  --shadow-tight: 0 8px 24px rgba(4, 20, 26, 0.28);
+
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  margin: 0;
+  overscroll-behavior-y: none;
+}
+
+body {
+  font-family: var(--font-body);
+  color: var(--mist);
+  background: radial-gradient(120% 120% at 15% -10%, var(--deep-3) 0%, var(--deep-2) 42%, var(--deep-1) 100%);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  position: relative;
+  overflow-x: hidden;
+}
+
+h1, h2, h3 {
+  font-family: var(--font-display);
+  margin: 0;
+  color: #ffffff;
+  letter-spacing: -0.01em;
+}
+
+p { margin: 0; }
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+input, select {
+  font-family: inherit;
+}
+
+#app {
+  position: relative;
+  z-index: 1;
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 0 20px 48px;
+}
+
+.screen {
+  display: none;
+  animation: screen-in 320ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.screen.active { display: block; }
+
+@keyframes screen-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ---------- Screen header ---------- */
+.screen-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 22px 0 18px;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: linear-gradient(to bottom, var(--deep-1) 60%, transparent);
+}
+
+.screen-header h1 {
+  font-size: 21px;
+  flex: 1;
+  text-align: center;
+}
+
+.screen-header-spacer { width: 34px; }
+
+.btn-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ---------- Home ---------- */
+.home-hero {
+  padding: 56px 0 28px;
+  text-align: center;
+}
+
+.brand-mark {
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 22px;
+  border-radius: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 34px;
+  color: var(--accent);
+}
+
+.home-title {
+  font-size: 40px;
+  font-weight: 700;
+}
+
+.home-subtitle {
+  margin-top: 8px;
+  color: var(--silver);
+  font-size: 16px;
+}
+
+.btn-large { margin-top: 28px; width: 100%; }
+
+.feature-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin: 8px 0 36px;
+}
+
+.feature-pill {
+  padding: 14px 8px;
+  text-align: center;
+  font-size: 12.5px;
+  color: var(--silver);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  border-radius: var(--radius-md);
+}
+
+.feature-pill span { font-size: 20px; }
+
+.section-block { margin-top: 10px; }
+
+.section-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin: 22px 0 12px;
+}
+
+.section-heading h2 { font-size: 17px; }
+
+.hint-text { color: var(--ink-soft); font-size: 12.5px; }
+
+.progress-chip {
+  font-size: 13px;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.empty-hint {
+  color: var(--ink-soft);
+  font-size: 14px;
+  padding: 18px 4px;
+  text-align: center;
+}
+
+.test-list { display: flex; flex-direction: column; gap: 10px; }
+
+.test-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 18px;
+  border-radius: var(--radius-md);
+  color: #fff;
+  text-align: left;
+  border: none;
+}
+
+.test-row-name { font-size: 15px; font-weight: 600; }
+.test-row-meta { font-size: 12.5px; color: var(--silver); margin-top: 3px; }
+.test-row-chevron { color: var(--silver); font-size: 20px; }
+
+/* ---------- Forms ---------- */
+.form-card, .upload-card, .student-card {
+  padding: 22px;
+  border-radius: var(--radius-lg);
+  margin-top: 6px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+  font-size: 13.5px;
+  color: var(--silver);
+}
+
+.field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.field input, .field select {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  color: #fff;
+  font-size: 15px;
+  outline: none;
+  transition: border-color 160ms ease, background 160ms ease;
+}
+
+.field input:focus, .field select:focus {
+  border-color: var(--accent);
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.field-inline {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.field-inline input { flex: 1; max-width: 150px; text-align: right; }
+
+.student-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px 18px;
+  margin-bottom: 16px;
+}
+
+/* ---------- Buttons ---------- */
+.btn {
+  border: none;
+  border-radius: var(--radius-md);
+  padding: 15px 20px;
+  font-size: 15.5px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: transform 140ms ease, opacity 140ms ease, box-shadow 140ms ease;
+}
+
+.btn:active { transform: scale(0.97); }
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%);
+  color: #04222b;
+  box-shadow: 0 12px 30px rgba(79, 209, 255, 0.28);
+}
+
+.btn-primary:disabled {
+  opacity: 0.4;
+  box-shadow: none;
+}
+
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.btn-ghost {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--accent);
+  border: 1px dashed rgba(79, 209, 255, 0.5);
+  padding: 12px 18px;
+  font-size: 14px;
+}
+
+/* ---------- Answer key list ---------- */
+.upload-label { font-size: 14px; margin-bottom: 10px; color: #fff; font-weight: 600; }
+.upload-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.upload-filename { font-size: 13px; color: var(--silver); }
+
+.answerkey-list { display: flex; flex-direction: column; gap: 8px; padding-bottom: 100px; }
+
+.key-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+}
+
+.key-row-number { font-size: 13.5px; font-weight: 700; color: var(--silver); width: 34px; }
+
+.option-chip-row { display: flex; gap: 8px; flex: 1; }
+
+.option-chip {
+  flex: 1;
+  padding: 9px 0;
+  text-align: center;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--silver);
+  font-weight: 600;
+  font-size: 14px;
+  transition: all 140ms ease;
+}
+
+.option-chip.selected {
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: #04222b;
+  border-color: transparent;
+}
+
+.option-chip.small {
+  flex: none;
+  width: 38px;
+  padding: 8px 0;
+  font-size: 12.5px;
+}
+
+.option-chip.ghost { color: var(--ink-soft); }
+
+.sticky-footer {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 14px 20px calc(16px + env(safe-area-inset-bottom));
+  display: flex;
+  gap: 10px;
+  background: linear-gradient(to top, rgba(11, 36, 48, 0.96) 60%, transparent);
+  z-index: 6;
+  max-width: 560px;
+  margin: 0 auto;
+}
+
+.sticky-footer .btn { flex: 1; }
+
+/* ---------- Live check ---------- */
+.live-progress-card {
+  padding: 18px 20px;
+  border-radius: var(--radius-lg);
+  margin-bottom: 16px;
+}
+
+.live-progress-count { font-size: 15px; font-weight: 600; margin-bottom: 10px; }
+
+.live-progress-track {
+  height: 6px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+
+.live-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  width: 0%;
+  transition: width 160ms ease;
+}
+
+.live-check-list { display: flex; flex-direction: column; gap: 6px; max-height: 60vh; overflow-y: auto; padding-bottom: 40px; }
+
+.live-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.05);
+  animation: row-in 220ms ease;
+}
+
+@keyframes row-in {
+  from { opacity: 0; transform: translateX(-6px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.live-q { width: 40px; font-weight: 700; color: var(--silver); font-size: 13.5px; }
+.live-answer { flex: 1; font-weight: 600; }
+.live-mark { font-size: 16px; font-weight: 700; }
+
+.live-row-correct .live-mark { color: var(--success); }
+.live-row-wrong .live-mark { color: var(--danger); }
+.live-row-unanswered .live-mark,
+.live-row-unclear .live-mark { color: var(--amber); }
+
+/* ---------- Result ---------- */
+.result-hero {
+  padding: 30px 20px;
+  text-align: center;
+  border-radius: var(--radius-lg);
+  margin-bottom: 16px;
+}
+
+.result-score { font-size: 42px; font-weight: 800; color: #fff; }
+.result-percentage { font-size: 16px; color: var(--silver); margin-top: 2px; }
+
+.result-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.stat { display: flex; flex-direction: column; gap: 2px; }
+.stat span { font-size: 22px; font-weight: 700; }
+.stat small { font-size: 11.5px; color: var(--silver); text-transform: uppercase; letter-spacing: 0.04em; }
+.stat-correct span { color: var(--success); }
+.stat-wrong span { color: var(--danger); }
+.stat-unclear span { color: var(--amber); }
+
+.result-list { display: flex; flex-direction: column; gap: 8px; padding-bottom: 100px; }
+
+.result-row {
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  border-left: 3px solid transparent;
+}
+
+.result-row-correct { border-left-color: var(--success); }
+.result-row-wrong { border-left-color: var(--danger); }
+.result-row-unanswered, .result-row-unclear { border-left-color: var(--amber); }
+
+.result-row-main { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.result-q { font-weight: 700; font-size: 13.5px; color: var(--silver); width: 34px; }
+.result-given { font-weight: 600; }
+.result-symbol { font-weight: 700; }
+.result-row-correct .result-symbol { color: var(--success); }
+.result-row-wrong .result-symbol { color: var(--danger); }
+.result-row-unanswered .result-symbol,
+.result-row-unclear .result-symbol { color: var(--amber); }
+.result-correct-hint { margin-left: auto; font-size: 12.5px; color: var(--silver); }
+
+.result-correct-row { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+
+/* ---------- Test detail ---------- */
+.test-detail-summary { padding: 18px 20px; border-radius: var(--radius-lg); margin-bottom: 8px; }
+.test-detail-line { font-size: 13.5px; color: var(--silver); margin-bottom: 6px; }
+.test-detail-line.ok { color: var(--success); }
+.test-detail-line.warn { color: var(--amber); }
+
+/* ---------- Quality / duplicate banners ---------- */
+.quality-banner {
+  padding: 12px 16px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  margin: 12px 0;
+}
+
+.quality-banner.warning { background: rgba(251, 191, 36, 0.14); color: #ffd873; border: 1px solid rgba(251, 191, 36, 0.35); }
+.quality-banner.error { background: rgba(251, 113, 133, 0.14); color: #ffb0bb; border: 1px solid rgba(251, 113, 133, 0.35); }
+
+/* ---------- Toast ---------- */
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 28px;
+  transform: translateX(-50%) translateY(10px);
+  background: rgba(10, 30, 38, 0.92);
+  color: #fff;
+  padding: 12px 20px;
+  border-radius: 100px;
+  font-size: 13.5px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  z-index: 50;
+  opacity: 0;
+  transition: opacity 220ms ease, transform 220ms ease;
+}
+
+.toast-visible { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+@media (max-width: 380px) {
+  .home-title { font-size: 34px; }
+  .result-score { font-size: 36px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+}
+
+
+/* ===========================================================
+   glass.css — liquid-glass surfaces and the ambient bubble field
+   =========================================================== */
+
+.glass-panel {
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.04));
+  -webkit-backdrop-filter: blur(22px) saturate(140%);
+  backdrop-filter: blur(22px) saturate(140%);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow: var(--shadow-tight), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  border-radius: var(--radius-lg);
+  position: relative;
+}
+
+.glass-panel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(120% 60% at 15% -10%, rgba(255, 255, 255, 0.16), transparent 60%);
+  pointer-events: none;
+}
+
+/* Ambient background bubbles — decorative, non-interactive, fixed. */
+.bubble-field {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.bubble {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, rgba(79, 209, 255, 0.35), rgba(124, 156, 255, 0.05) 70%);
+  filter: blur(2px);
+  opacity: 0.55;
+  animation: drift 22s ease-in-out infinite;
+}
+
+.b1 { width: 260px; height: 260px; top: -80px; left: -60px; animation-duration: 26s; }
+.b2 { width: 180px; height: 180px; top: 20%; right: -70px; animation-duration: 20s; animation-delay: -4s; }
+.b3 { width: 140px; height: 140px; bottom: 10%; left: -50px; animation-duration: 24s; animation-delay: -9s; }
+.b4 { width: 220px; height: 220px; bottom: -90px; right: -40px; animation-duration: 30s; animation-delay: -2s; }
+.b5 { width: 100px; height: 100px; top: 55%; left: 45%; animation-duration: 18s; animation-delay: -12s; opacity: 0.3; }
+
+@keyframes drift {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(18px, -24px) scale(1.05); }
+  66% { transform: translate(-14px, 16px) scale(0.96); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bubble { animation: none; }
+}
+
+
+/* ===========================================================
+   scanner.css — camera scanning interface
+   =========================================================== */
+
+.scan-stage {
+  position: relative;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: #04141a;
+  aspect-ratio: 0.75 / 1;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: var(--shadow-soft);
+}
+
+#camera-feed {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.scan-frame {
+  position: absolute;
+  inset: 8% 10%;
+  pointer-events: none;
+}
+
+.corner {
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  border: 3px solid var(--accent);
+  filter: drop-shadow(0 0 6px rgba(79, 209, 255, 0.6));
+}
+
+.corner.tl { top: 0; left: 0; border-right: none; border-bottom: none; border-top-left-radius: 10px; }
+.corner.tr { top: 0; right: 0; border-left: none; border-bottom: none; border-top-right-radius: 10px; }
+.corner.bl { bottom: 0; left: 0; border-right: none; border-top: none; border-bottom-left-radius: 10px; }
+.corner.br { bottom: 0; right: 0; border-left: none; border-top: none; border-bottom-right-radius: 10px; }
+
+.scan-sheen {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 40%;
+  top: -40%;
+  background: linear-gradient(180deg, rgba(79, 209, 255, 0.35), transparent);
+  animation: sheen-sweep 3.2s ease-in-out infinite;
+}
+
+@keyframes sheen-sweep {
+  0% { top: -40%; }
+  50% { top: 100%; }
+  100% { top: -40%; }
+}
+
+.scan-instruction {
+  position: absolute;
+  bottom: 64px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  color: #fff;
+  font-size: 13.5px;
+  font-weight: 600;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+
+.align-meter {
+  position: absolute;
+  bottom: 40px;
+  left: 14%;
+  right: 14%;
+  height: 4px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.2);
+  overflow: hidden;
+}
+
+.align-meter-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--amber), var(--amber));
+  transition: width 160ms ease, background 200ms ease;
+}
+
+.align-meter-fill.align-good {
+  background: linear-gradient(90deg, var(--success), var(--success));
+}
+
+.camera-fallback {
+  position: absolute;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: var(--silver);
+  padding: 20px;
+  font-size: 13.5px;
+}
+
+.camera-fallback.visible { display: flex; }
+
+.scan-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 20px;
+}
+
+.scan-controls-spacer { width: 84px; }
+
+.capture-btn {
+  width: 74px;
+  height: 74px;
+  border-radius: 50%;
+  border: 4px solid rgba(255, 255, 255, 0.85);
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  box-shadow: 0 10px 26px rgba(79, 209, 255, 0.4);
+  transition: transform 140ms ease;
+}
+
+.capture-btn:active { transform: scale(0.92); }
+
+</style>
 </head>
 <body>
 
@@ -232,13 +936,1442 @@
 </main>
 
 <div class="toast" id="toast" hidden></div>
+<script>
+/**
+ * storage.js
+ * Thin wrapper around localStorage. Owns the on-device data model for
+ * OMR Magic: tests, answer keys, and per-student results.
+ *
+ * Data shape
+ * ----------
+ * Test {
+ *   id, name, createdAt,
+ *   optionCount,            // e.g. 4 -> A B C D
+ *   marksPerQuestion,       // positive marks for a correct answer
+ *   negativeMarking,        // marks deducted for a wrong answer (>=0)
+ *   answerKey: [ 'A', 'C', ... ] | null   // null until approved
+ *   keyApproved: boolean,
+ *   results: [ Result ]
+ * }
+ *
+ * Result {
+ *   id, testId, capturedAt,
+ *   studentName, studentRoll,
+ *   answers: [ { value, status, confidence } ],  // status: correct|wrong|unanswered|unclear
+ *   correct, wrong, unanswered, unclear,
+ *   score, maxScore, percentage,
+ *   sheetHash        // used for duplicate-sheet detection
+ * }
+ */
 
-<script src="scripts/storage.js"></script>
-<script src="scripts/question-parser.js"></script>
-<script src="scripts/answer-key.js"></script>
-<script src="scripts/image-processing.js"></script>
-<script src="scripts/omr-scanner.js"></script>
-<script src="scripts/grading.js"></script>
-<script src="scripts/app.js"></script>
+const OMRStorage = (() => {
+  const TESTS_KEY = 'omrmagic.tests.v1';
+
+  function _readAll() {
+    try {
+      const raw = localStorage.getItem(TESTS_KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch (err) {
+      console.error('OMRStorage: failed to read tests', err);
+      return [];
+    }
+  }
+
+  function _writeAll(tests) {
+    try {
+      localStorage.setItem(TESTS_KEY, JSON.stringify(tests));
+      return true;
+    } catch (err) {
+      console.error('OMRStorage: failed to persist tests', err);
+      return false;
+    }
+  }
+
+  function uid(prefix) {
+    return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+  }
+
+  function listTests() {
+    return _readAll().sort((a, b) => b.createdAt - a.createdAt);
+  }
+
+  function getTest(testId) {
+    return _readAll().find((t) => t.id === testId) || null;
+  }
+
+  function createTest({ name, optionCount = 4, marksPerQuestion = 1, negativeMarking = 0 }) {
+    const tests = _readAll();
+    const test = {
+      id: uid('test'),
+      name: name || 'Untitled test',
+      createdAt: Date.now(),
+      optionCount,
+      marksPerQuestion,
+      negativeMarking,
+      answerKey: [],
+      keyApproved: false,
+      results: [],
+    };
+    tests.push(test);
+    _writeAll(tests);
+    return test;
+  }
+
+  function updateTest(testId, patch) {
+    const tests = _readAll();
+    const idx = tests.findIndex((t) => t.id === testId);
+    if (idx === -1) return null;
+    tests[idx] = { ...tests[idx], ...patch };
+    _writeAll(tests);
+    return tests[idx];
+  }
+
+  function deleteTest(testId) {
+    const tests = _readAll().filter((t) => t.id !== testId);
+    _writeAll(tests);
+  }
+
+  function addResult(testId, result) {
+    const tests = _readAll();
+    const test = tests.find((t) => t.id === testId);
+    if (!test) return null;
+    const withId = { ...result, id: uid('res'), testId, capturedAt: Date.now() };
+    test.results.push(withId);
+    _writeAll(tests);
+    return withId;
+  }
+
+  function findDuplicate(testId, sheetHash) {
+    const test = getTest(testId);
+    if (!test || !sheetHash) return null;
+    return test.results.find((r) => r.sheetHash === sheetHash) || null;
+  }
+
+  return {
+    listTests,
+    getTest,
+    createTest,
+    updateTest,
+    deleteTest,
+    addResult,
+    findDuplicate,
+    uid,
+  };
+})();
+
+
+/**
+ * question-parser.js
+ * Reads an uploaded question-paper file (image or PDF) and prepares an
+ * empty answer key sized to the teacher's chosen question/option count.
+ *
+ * IMPORTANT: There is no on-device OCR/AI model in this build, so the
+ * parser never invents answers. It is a real, working module for
+ * ingesting and previewing the question paper, structured so an AI
+ * question-parsing backend can be dropped in later behind the same
+ * `QuestionParser.proposeAnswerKey()` call. Until then it always
+ * returns `null`, and the UI is expected to fall back to manual entry.
+ */
+
+const QuestionParser = (() => {
+  const ACCEPTED_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'application/pdf'];
+
+  function isAccepted(file) {
+    return !!file && ACCEPTED_TYPES.includes(file.type);
+  }
+
+  /** Reads a file into a data URL for on-screen preview. */
+  function readAsDataURL(file) {
+    return new Promise((resolve, reject) => {
+      if (!isAccepted(file)) {
+        reject(new Error('Unsupported file type. Upload a PNG, JPG, WEBP, or PDF.'));
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(new Error('Could not read the file.'));
+      reader.readAsDataURL(file);
+    });
+  }
+
+  /**
+   * Placeholder for a future AI-backed proposal step. Returns `null` today
+   * so the caller always falls through to manual entry rather than ever
+   * showing a fabricated answer.
+   */
+  async function proposeAnswerKey(_file, _questionCount) {
+    return null;
+  }
+
+  /** Builds an empty, teacher-editable answer key of the given size. */
+  function blankAnswerKey(questionCount) {
+    return new Array(Math.max(0, questionCount)).fill(null);
+  }
+
+  return { ACCEPTED_TYPES, isAccepted, readAsDataURL, proposeAnswerKey, blankAnswerKey };
+})();
+
+
+/**
+ * answer-key.js
+ * Owns two things:
+ *   1. SheetLayout - the deterministic geometry of an OMR Magic answer
+ *      sheet (corner markers + bubble grid). image-processing.js warps a
+ *      photographed sheet into this exact canvas size, and
+ *      omr-scanner.js samples bubbles at these exact coordinates, so the
+ *      printed template and the scanner always agree on where every
+ *      bubble lives.
+ *   2. AnswerKey - helpers for building, validating, and approving the
+ *      teacher's answer key before any grading can happen.
+ */
+
+const SheetLayout = (() => {
+  // Canonical corrected-sheet size (A4 portrait @ ~150dpi).
+  const WIDTH = 1240;
+  const HEIGHT = 1754;
+  const MARGIN = 64;
+  const MARKER_SIZE = 36;
+  const HEADER_HEIGHT = 190;
+  const MAX_COLUMNS = 5;
+  const COLUMN_GAP = 24;
+  const OPTION_GAP = 34;
+  const BUBBLE_RADIUS = 12;
+  const LABEL_GUTTER = 54;
+
+  function markerPositions() {
+    const half = MARKER_SIZE / 2;
+    return [
+      { corner: 'top-left', x: MARGIN + half, y: MARGIN + half },
+      { corner: 'top-right', x: WIDTH - MARGIN - half, y: MARGIN + half },
+      { corner: 'bottom-left', x: MARGIN + half, y: HEIGHT - MARGIN - half },
+      { corner: 'bottom-right', x: WIDTH - MARGIN - half, y: HEIGHT - MARGIN - half },
+    ];
+  }
+
+  /**
+   * Lays out `questionCount` questions, each with `optionCount` bubbles,
+   * into up to MAX_COLUMNS columns that fill the printable area between
+   * the corner markers. Returns absolute pixel centers for every bubble.
+   */
+  function computeLayout(questionCount, optionCount) {
+    const q = Math.max(0, questionCount | 0);
+    const opts = Math.max(2, optionCount | 0);
+    const contentTop = MARGIN + HEADER_HEIGHT;
+    const contentBottom = HEIGHT - MARGIN - MARKER_SIZE - 20;
+    const contentLeft = MARGIN + MARKER_SIZE + 20;
+    const contentRight = WIDTH - MARGIN - MARKER_SIZE - 20;
+    const usableWidth = contentRight - contentLeft;
+    const usableHeight = contentBottom - contentTop;
+
+    const columns = q === 0 ? 1 : Math.min(MAX_COLUMNS, Math.ceil(q / 22) || 1);
+    const rows = Math.max(1, Math.ceil(q / columns));
+    const columnWidth = (usableWidth - COLUMN_GAP * (columns - 1)) / columns;
+    const rowHeight = Math.min(52, usableHeight / rows);
+
+    const questions = [];
+    for (let i = 0; i < q; i++) {
+      const col = Math.floor(i / rows);
+      const row = i % rows;
+      const colX = contentLeft + col * (columnWidth + COLUMN_GAP);
+      const rowY = contentTop + row * rowHeight + rowHeight / 2;
+      const bubbleAreaWidth = columnWidth - LABEL_GUTTER;
+      const options = [];
+      for (let o = 0; o < opts; o++) {
+        const spacing = bubbleAreaWidth / opts;
+        options.push({
+          label: String.fromCharCode(65 + o),
+          x: colX + LABEL_GUTTER + spacing * o + spacing / 2,
+          y: rowY,
+          r: BUBBLE_RADIUS,
+        });
+      }
+      questions.push({ number: i + 1, labelX: colX, labelY: rowY, options });
+    }
+
+    return {
+      width: WIDTH,
+      height: HEIGHT,
+      margin: MARGIN,
+      markerSize: MARKER_SIZE,
+      markers: markerPositions(),
+      headerHeight: HEADER_HEIGHT,
+      questions,
+      columns,
+      rows,
+    };
+  }
+
+  return { WIDTH, HEIGHT, MARGIN, MARKER_SIZE, computeLayout, markerPositions };
+})();
+
+const AnswerKey = (() => {
+  function blank(questionCount) {
+    return QuestionParser.blankAnswerKey(questionCount);
+  }
+
+  function isComplete(answerKey) {
+    return Array.isArray(answerKey) && answerKey.length > 0 && answerKey.every((a) => !!a);
+  }
+
+  function setAnswer(answerKey, index, value) {
+    const next = answerKey.slice();
+    next[index] = value;
+    return next;
+  }
+
+  /**
+   * Renders the printable answer sheet (header, corner markers, and the
+   * full bubble grid) onto a canvas the teacher can download and hand
+   * out. Returns the canvas element.
+   */
+  function renderTemplate({ testName, questionCount, optionCount }) {
+    const layout = SheetLayout.computeLayout(questionCount, optionCount);
+    const canvas = document.createElement('canvas');
+    canvas.width = layout.width;
+    canvas.height = layout.height;
+    const ctx = canvas.getContext('2d');
+
+    // Background
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, layout.width, layout.height);
+
+    // Corner alignment markers
+    ctx.fillStyle = '#0b1c22';
+    layout.markers.forEach((m) => {
+      ctx.fillRect(m.x - layout.markerSize / 2, m.y - layout.markerSize / 2, layout.markerSize, layout.markerSize);
+    });
+
+    // Header
+    ctx.fillStyle = '#0b1c22';
+    ctx.font = '600 34px -apple-system, "SF Pro Display", Segoe UI, sans-serif';
+    ctx.fillText('OMR Magic Answer Sheet', layout.margin + layout.markerSize + 30, layout.margin + 56);
+
+    ctx.font = '400 22px -apple-system, "SF Pro Display", Segoe UI, sans-serif';
+    ctx.fillText(`Test: ${testName || 'Untitled test'}`, layout.margin + layout.markerSize + 30, layout.margin + 96);
+
+    ctx.strokeStyle = '#0b1c22';
+    ctx.lineWidth = 1.4;
+    ctx.font = '400 18px -apple-system, "SF Pro Display", Segoe UI, sans-serif';
+    const fieldY = layout.margin + 140;
+    ctx.fillText('Name:', layout.margin + layout.markerSize + 30, fieldY);
+    ctx.beginPath();
+    ctx.moveTo(layout.margin + layout.markerSize + 100, fieldY + 4);
+    ctx.lineTo(layout.margin + layout.markerSize + 420, fieldY + 4);
+    ctx.stroke();
+
+    ctx.fillText('Roll No:', layout.margin + layout.markerSize + 460, fieldY);
+    ctx.beginPath();
+    ctx.moveTo(layout.margin + layout.markerSize + 550, fieldY + 4);
+    ctx.lineTo(layout.margin + layout.markerSize + 780, fieldY + 4);
+    ctx.stroke();
+
+    // Bubble grid
+    layout.questions.forEach((q) => {
+      ctx.fillStyle = '#0b1c22';
+      ctx.font = '600 18px -apple-system, "SF Pro Display", Segoe UI, sans-serif';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(String(q.number), q.labelX, q.labelY);
+
+      q.options.forEach((opt) => {
+        ctx.beginPath();
+        ctx.arc(opt.x, opt.y, opt.r, 0, Math.PI * 2);
+        ctx.lineWidth = 1.8;
+        ctx.strokeStyle = '#0b1c22';
+        ctx.stroke();
+        ctx.font = '500 13px -apple-system, "SF Pro Display", Segoe UI, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(opt.label, opt.x, opt.y);
+        ctx.textAlign = 'left';
+      });
+    });
+
+    ctx.font = '400 14px -apple-system, "SF Pro Display", Segoe UI, sans-serif';
+    ctx.fillStyle = '#5b6b70';
+    ctx.fillText(
+      'Fill each bubble completely with a dark pen or pencil. Keep the four corner squares fully visible when scanning.',
+      layout.margin + layout.markerSize + 30,
+      layout.height - layout.margin - 12
+    );
+
+    return canvas;
+  }
+
+  function downloadTemplate({ testName, questionCount, optionCount }) {
+    const canvas = renderTemplate({ testName, questionCount, optionCount });
+    const link = document.createElement('a');
+    link.download = `${(testName || 'omr-magic-sheet').replace(/\s+/g, '-').toLowerCase()}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  }
+
+  return { blank, isComplete, setAnswer, renderTemplate, downloadTemplate };
+})();
+
+
+/**
+ * image-processing.js
+ * Low-level image utilities used by the OMR pipeline:
+ *   grayscale -> marker detection -> homography -> perspective warp
+ * No detection results are ever fabricated: if the four corner markers
+ * cannot be found with reasonable confidence, `correctPerspective`
+ * throws and the caller must ask the teacher to rescan.
+ */
+
+const ImageProcessor = (() => {
+  /** Converts an ImageData to a plain Float32Array of luminance values. */
+  function toGrayscale(imageData) {
+    const { data, width, height } = imageData;
+    const out = new Float32Array(width * height);
+    for (let i = 0, p = 0; i < data.length; i += 4, p++) {
+      out[p] = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+    }
+    return { gray: out, width, height };
+  }
+
+  function averageBrightness(gray) {
+    let sum = 0;
+    for (let i = 0; i < gray.length; i++) sum += gray[i];
+    return sum / gray.length;
+  }
+
+  /** Standard deviation of luminance - low value roughly means low contrast / blur. */
+  function contrastScore(gray) {
+    const mean = averageBrightness(gray);
+    let variance = 0;
+    for (let i = 0; i < gray.length; i++) variance += (gray[i] - mean) ** 2;
+    return Math.sqrt(variance / gray.length);
+  }
+
+  /**
+   * Reports scan quality before we try anything expensive. Never blocks
+   * scanning, just informs the "scan-quality warning" UI.
+   */
+  function assessQuality(imageData) {
+    const { gray } = toGrayscale(imageData);
+    const brightness = averageBrightness(gray);
+    const contrast = contrastScore(gray);
+    const warnings = [];
+    if (brightness < 60) warnings.push('The photo looks dark. Try better lighting.');
+    if (brightness > 225) warnings.push('The photo looks washed out. Reduce glare or flash.');
+    if (contrast < 25) warnings.push('Low contrast detected. Hold the camera steady and refocus.');
+    return { brightness, contrast, warnings, ok: warnings.length === 0 };
+  }
+
+  /**
+   * Searches one quadrant of the image for the darkest small square blob
+   * (an alignment marker). `region` is {x0,y0,x1,y1} in pixel space.
+   */
+  function findMarkerInRegion(gray, width, height, region) {
+    const win = Math.max(14, Math.round(Math.min(width, height) * 0.028));
+    const step = Math.max(2, Math.round(win / 3));
+    let best = null;
+
+    for (let y = region.y0; y + win < region.y1; y += step) {
+      for (let x = region.x0; x + win < region.x1; x += step) {
+        let sum = 0;
+        for (let wy = 0; wy < win; wy += 2) {
+          const row = (y + wy) * width;
+          for (let wx = 0; wx < win; wx += 2) {
+            sum += gray[row + x + wx];
+          }
+        }
+        const avg = sum / ((win / 2) * (win / 2));
+        if (!best || avg < best.avg) best = { x, y, avg };
+      }
+    }
+    if (!best || best.avg > 130) return null; // nothing dark enough to be a marker
+
+    // Refine to the centroid of dark pixels inside the winning window for sub-pixel accuracy.
+    const threshold = Math.min(150, best.avg + 40);
+    let sx = 0;
+    let sy = 0;
+    let count = 0;
+    for (let wy = -2; wy < win + 2; wy++) {
+      const py = best.y + wy;
+      if (py < 0 || py >= height) continue;
+      const row = py * width;
+      for (let wx = -2; wx < win + 2; wx++) {
+        const px = best.x + wx;
+        if (px < 0 || px >= width) continue;
+        const v = gray[row + px];
+        if (v <= threshold) {
+          sx += px;
+          sy += py;
+          count++;
+        }
+      }
+    }
+    if (count < 8) return null;
+    return { x: sx / count, y: sy / count, confidence: Math.max(0, Math.min(1, (130 - best.avg) / 130)) };
+  }
+
+  /**
+   * Looks for all four corner markers within the expected quadrants of
+   * the captured photo. Returns null (never guesses) if any is missing.
+   */
+  function detectMarkers(imageData) {
+    const { gray, width, height } = toGrayscale(imageData);
+    const midX = width / 2;
+    const midY = height / 2;
+    const pad = 0.12; // markers should sit within ~12% of each edge
+
+    const quadrants = {
+      topLeft: { x0: 0, y0: 0, x1: midX + width * pad, y1: midY + height * pad },
+      topRight: { x0: midX - width * pad, y0: 0, x1: width, y1: midY + height * pad },
+      bottomLeft: { x0: 0, y0: midY - height * pad, x1: midX + width * pad, y1: height },
+      bottomRight: { x0: midX - width * pad, y0: midY - height * pad, x1: width, y1: height },
+    };
+
+    const found = {};
+    for (const key of Object.keys(quadrants)) {
+      const m = findMarkerInRegion(gray, width, height, quadrants[key]);
+      if (!m) return null;
+      found[key] = m;
+    }
+    return found;
+  }
+
+  /** Solves the 8-DOF homography mapping each `from` point to its `to` point. */
+  function computeHomography(fromPts, toPts) {
+    const A = [];
+    const b = [];
+    for (let i = 0; i < 4; i++) {
+      const { x, y } = fromPts[i];
+      const { x: u, y: v } = toPts[i];
+      A.push([x, y, 1, 0, 0, 0, -x * u, -y * u]);
+      b.push(u);
+      A.push([0, 0, 0, x, y, 1, -x * v, -y * v]);
+      b.push(v);
+    }
+    const h = solveLinearSystem(A, b);
+    if (!h) return null;
+    return h; // [h11,h12,h13,h21,h22,h23,h31,h32]; h33 = 1
+  }
+
+  /** Gauss-Jordan elimination for an 8x8 system. Returns null if singular. */
+  function solveLinearSystem(A, b) {
+    const n = A.length;
+    const M = A.map((row, i) => [...row, b[i]]);
+    for (let col = 0; col < n; col++) {
+      let pivot = col;
+      for (let r = col + 1; r < n; r++) {
+        if (Math.abs(M[r][col]) > Math.abs(M[pivot][col])) pivot = r;
+      }
+      if (Math.abs(M[pivot][col]) < 1e-9) return null;
+      [M[col], M[pivot]] = [M[pivot], M[col]];
+      const pivotVal = M[col][col];
+      for (let c = col; c <= n; c++) M[col][c] /= pivotVal;
+      for (let r = 0; r < n; r++) {
+        if (r === col) continue;
+        const factor = M[r][col];
+        for (let c = col; c <= n; c++) M[r][c] -= factor * M[col][c];
+      }
+    }
+    return M.map((row) => row[n]);
+  }
+
+  function applyHomography(h, x, y) {
+    const denom = h[6] * x + h[7] * y + 1;
+    return {
+      x: (h[0] * x + h[1] * y + h[2]) / denom,
+      y: (h[3] * x + h[4] * y + h[5]) / denom,
+    };
+  }
+
+  function bilinearSample(imageData, x, y) {
+    const { data, width, height } = imageData;
+    if (x < 0 || y < 0 || x >= width - 1 || y >= height - 1) return null;
+    const x0 = Math.floor(x);
+    const y0 = Math.floor(y);
+    const dx = x - x0;
+    const dy = y - y0;
+    const idx = (px, py) => (py * width + px) * 4;
+    const out = [0, 0, 0, 255];
+    for (let c = 0; c < 3; c++) {
+      const v00 = data[idx(x0, y0) + c];
+      const v10 = data[idx(x0 + 1, y0) + c];
+      const v01 = data[idx(x0, y0 + 1) + c];
+      const v11 = data[idx(x0 + 1, y0 + 1) + c];
+      out[c] =
+        v00 * (1 - dx) * (1 - dy) + v10 * dx * (1 - dy) + v01 * (1 - dx) * dy + v11 * dx * dy;
+    }
+    return out;
+  }
+
+  /**
+   * Detects the four markers, solves the homography against the
+   * canonical SheetLayout corners, and warps the photo into a clean,
+   * upright canonical-size canvas ready for bubble sampling.
+   * Throws if markers cannot be found - callers must surface that as
+   * "couldn't find the sheet, try again", never a silent guess.
+   */
+  function correctPerspective(imageData) {
+    const markers = detectMarkers(imageData);
+    if (!markers) {
+      const err = new Error('Could not find all four corner markers.');
+      err.code = 'NO_MARKERS';
+      throw err;
+    }
+
+    const canonical = SheetLayout.markerPositions();
+    const canonicalByCorner = {
+      topLeft: canonical.find((m) => m.corner === 'top-left'),
+      topRight: canonical.find((m) => m.corner === 'top-right'),
+      bottomLeft: canonical.find((m) => m.corner === 'bottom-left'),
+      bottomRight: canonical.find((m) => m.corner === 'bottom-right'),
+    };
+
+    // Map canonical (output) coordinates -> captured (input) coordinates,
+    // so the warp loop below can sample directly without inverting H.
+    const fromCanonical = [
+      canonicalByCorner.topLeft,
+      canonicalByCorner.topRight,
+      canonicalByCorner.bottomLeft,
+      canonicalByCorner.bottomRight,
+    ];
+    const toCaptured = [markers.topLeft, markers.topRight, markers.bottomLeft, markers.bottomRight];
+
+    const h = computeHomography(fromCanonical, toCaptured);
+    if (!h) {
+      const err = new Error('The sheet corners look degenerate. Try a flatter, more even photo.');
+      err.code = 'BAD_HOMOGRAPHY';
+      throw err;
+    }
+
+    const outCanvas = document.createElement('canvas');
+    outCanvas.width = SheetLayout.WIDTH;
+    outCanvas.height = SheetLayout.HEIGHT;
+    const outCtx = outCanvas.getContext('2d');
+    const outData = outCtx.createImageData(SheetLayout.WIDTH, SheetLayout.HEIGHT);
+
+    for (let oy = 0; oy < SheetLayout.HEIGHT; oy++) {
+      for (let ox = 0; ox < SheetLayout.WIDTH; ox++) {
+        const src = applyHomography(h, ox, oy);
+        const sample = bilinearSample(imageData, src.x, src.y);
+        const di = (oy * SheetLayout.WIDTH + ox) * 4;
+        if (sample) {
+          outData.data[di] = sample[0];
+          outData.data[di + 1] = sample[1];
+          outData.data[di + 2] = sample[2];
+          outData.data[di + 3] = 255;
+        } else {
+          outData.data[di] = 255;
+          outData.data[di + 1] = 255;
+          outData.data[di + 2] = 255;
+          outData.data[di + 3] = 255;
+        }
+      }
+    }
+    outCtx.putImageData(outData, 0, 0);
+    const markerConfidence =
+      (markers.topLeft.confidence + markers.topRight.confidence + markers.bottomLeft.confidence + markers.bottomRight.confidence) / 4;
+
+    return { canvas: outCanvas, markerConfidence };
+  }
+
+  /**
+   * Lightweight alignment check used by the live camera preview to drive
+   * auto-capture: looks for four dark marker-like blobs near the corners
+   * of the current guide-frame crop without doing the full warp.
+   */
+  function quickAlignmentScore(imageData) {
+    try {
+      const markers = detectMarkers(imageData);
+      if (!markers) return 0;
+      return (
+        (markers.topLeft.confidence + markers.topRight.confidence + markers.bottomLeft.confidence + markers.bottomRight.confidence) / 4
+      );
+    } catch (_err) {
+      return 0;
+    }
+  }
+
+  return {
+    toGrayscale,
+    averageBrightness,
+    contrastScore,
+    assessQuality,
+    detectMarkers,
+    computeHomography,
+    applyHomography,
+    correctPerspective,
+    quickAlignmentScore,
+  };
+})();
+
+
+/**
+ * omr-scanner.js
+ * The mark-recognition stage of the pipeline, plus the orchestrator that
+ * runs the full sequence:
+ *   Image -> Detect sheet -> Correct perspective -> Detect bubbles ->
+ *   Analyze marks -> Confidence -> Answers
+ *
+ * Every answer comes from an actual darkness measurement inside the
+ * bubble region. If nothing is dark enough, the question is reported as
+ * unanswered; if more than one bubble is dark, it's reported as multiple.
+ * Nothing here is randomized or guessed.
+ */
+
+const OMRScanner = (() => {
+  const FILL_THRESHOLD = 150; // luminance below this counts as "ink"
+  const MULTI_MARK_GAP = 18; // if a 2nd-darkest bubble is within this of the darkest, call it "multiple"
+
+  /** Average luminance inside a bubble's circular sampling area. */
+  function sampleBubble(gray, width, height, bubble) {
+    const r = bubble.r * 0.72; // sample inside the ring, not the ring itself
+    let sum = 0;
+    let count = 0;
+    const minY = Math.max(0, Math.floor(bubble.y - r));
+    const maxY = Math.min(height - 1, Math.ceil(bubble.y + r));
+    const minX = Math.max(0, Math.floor(bubble.x - r));
+    const maxX = Math.min(width - 1, Math.ceil(bubble.x + r));
+    for (let y = minY; y <= maxY; y++) {
+      const dy = y - bubble.y;
+      const row = y * width;
+      for (let x = minX; x <= maxX; x++) {
+        const dx = x - bubble.x;
+        if (dx * dx + dy * dy <= r * r) {
+          sum += gray[row + x];
+          count++;
+        }
+      }
+    }
+    return count ? sum / count : 255;
+  }
+
+  /**
+   * Analyzes every question in the layout against the corrected canvas.
+   * Returns one entry per question: { value, status, confidence, fills }
+   *   status: 'answered' | 'blank' | 'multiple'
+   */
+  function analyzeBubbles(correctedCanvas, layout) {
+    const ctx = correctedCanvas.getContext('2d');
+    const imageData = ctx.getImageData(0, 0, correctedCanvas.width, correctedCanvas.height);
+    const { gray, width, height } = ImageProcessor.toGrayscale(imageData);
+
+    return layout.questions.map((q) => {
+      const fills = q.options.map((opt) => ({
+        label: opt.label,
+        darkness: 255 - sampleBubble(gray, width, height, opt),
+      }));
+      fills.sort((a, b) => b.darkness - a.darkness);
+
+      const darkest = fills[0];
+      const second = fills[1] || { darkness: 0 };
+      const marked = fills.filter((f) => 255 - f.darkness < FILL_THRESHOLD);
+
+      let status;
+      let value = null;
+      let confidence;
+
+      if (marked.length === 0) {
+        status = 'blank';
+        confidence = 1 - darkest.darkness / (255 - FILL_THRESHOLD);
+        confidence = Math.max(0, Math.min(1, 1 - confidence));
+      } else if (marked.length > 1 && darkest.darkness - second.darkness < MULTI_MARK_GAP) {
+        status = 'multiple';
+        value = marked.map((f) => f.label).join('/');
+        confidence = 0.2;
+      } else {
+        status = 'answered';
+        value = darkest.label;
+        const margin = darkest.darkness - second.darkness;
+        confidence = Math.max(0.35, Math.min(1, margin / 90));
+      }
+
+      return { number: q.number, value, status, confidence: Number(confidence.toFixed(2)), fills };
+    });
+  }
+
+  /** Simple perceptual hash of the corrected sheet, used for duplicate-scan warnings. */
+  function hashCanvas(canvas) {
+    const small = document.createElement('canvas');
+    small.width = 16;
+    small.height = 16;
+    small.getContext('2d').drawImage(canvas, 0, 0, 16, 16);
+    const data = small.getContext('2d').getImageData(0, 0, 16, 16).data;
+    let hash = '';
+    for (let i = 0; i < data.length; i += 4) {
+      const lum = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+      hash += lum > 128 ? '1' : '0';
+    }
+    return hash;
+  }
+
+  /**
+   * Runs the full pipeline on a captured photo (an ImageData or a
+   * <canvas>/<img> source already drawn to a canvas). `test` supplies
+   * optionCount/questionCount so the scanner samples the exact same
+   * grid the printed template used.
+   */
+  async function scan(sourceCanvas, test) {
+    const sourceCtx = sourceCanvas.getContext('2d');
+    const imageData = sourceCtx.getImageData(0, 0, sourceCanvas.width, sourceCanvas.height);
+
+    const quality = ImageProcessor.assessQuality(imageData);
+    const { canvas: corrected, markerConfidence } = ImageProcessor.correctPerspective(imageData);
+    const layout = SheetLayout.computeLayout(test.answerKey.length, test.optionCount);
+    const answers = analyzeBubbles(corrected, layout);
+    const sheetHash = hashCanvas(corrected);
+
+    return { answers, quality, markerConfidence, sheetHash, correctedCanvas: corrected };
+  }
+
+  return { analyzeBubbles, sampleBubble, hashCanvas, scan, FILL_THRESHOLD };
+})();
+
+
+/**
+ * grading.js
+ * Pure functions that turn a scanned answer set + an approved answer key
+ * into a graded result. No UI, no storage - easy to unit test.
+ */
+
+const GradingEngine = (() => {
+  /**
+   * @param {Array<{value:string|null,status:string,confidence:number}>} scanned
+   * @param {Array<string>} answerKey
+   * @param {{marksPerQuestion:number, negativeMarking:number}} settings
+   */
+  function grade(scanned, answerKey, settings) {
+    const marksPerQuestion = settings.marksPerQuestion ?? 1;
+    const negativeMarking = settings.negativeMarking ?? 0;
+
+    let correct = 0;
+    let wrong = 0;
+    let unanswered = 0;
+    let unclear = 0;
+    let score = 0;
+
+    const detail = scanned.map((entry, i) => {
+      const keyAnswer = answerKey[i];
+      let outcome;
+
+      if (entry.status === 'blank') {
+        outcome = 'unanswered';
+        unanswered++;
+      } else if (entry.status === 'multiple' || entry.confidence < 0.4) {
+        outcome = 'unclear';
+        unclear++;
+      } else if (entry.value === keyAnswer) {
+        outcome = 'correct';
+        correct++;
+        score += marksPerQuestion;
+      } else {
+        outcome = 'wrong';
+        wrong++;
+        score -= negativeMarking;
+      }
+
+      return {
+        number: entry.number,
+        given: entry.value,
+        correctAnswer: keyAnswer,
+        outcome,
+        confidence: entry.confidence,
+      };
+    });
+
+    const maxScore = answerKey.length * marksPerQuestion;
+    score = Math.max(0, Number(score.toFixed(2)));
+    const percentage = maxScore > 0 ? Math.round((score / maxScore) * 1000) / 10 : 0;
+
+    return {
+      detail,
+      correct,
+      wrong,
+      unanswered,
+      unclear,
+      score,
+      maxScore,
+      percentage,
+    };
+  }
+
+  /**
+   * Applies a teacher's manual correction to a single question after
+   * review (used in the "unclear" correction flow) and re-grades.
+   */
+  function applyCorrection(gradedResult, questionIndex, newValue, answerKey, settings) {
+    const scannedLike = gradedResult.detail.map((d, i) =>
+      i === questionIndex
+        ? { number: d.number, value: newValue, status: newValue ? 'answered' : 'blank', confidence: 1 }
+        : { number: d.number, value: d.given, status: d.outcome === 'unanswered' ? 'blank' : d.outcome === 'unclear' ? 'multiple' : 'answered', confidence: d.confidence }
+    );
+    return grade(scannedLike, answerKey, settings);
+  }
+
+  return { grade, applyCorrection };
+})();
+
+
+/**
+ * app.js
+ * Screen routing and UI glue. Talks to the pipeline modules
+ * (image-processing, omr-scanner, grading, answer-key, question-parser)
+ * and to storage. Holds only transient UI state; persisted state lives
+ * in OMRStorage.
+ */
+
+(() => {
+  const screens = Array.from(document.querySelectorAll('.screen'));
+  const history = ['home'];
+
+  const state = {
+    draftTest: null, // test being set up (before or during answer-key editing)
+    activeTestId: null, // test currently being scanned against
+    lastScan: null, // { answers, quality, markerConfidence, sheetHash, correctedCanvas }
+    lastGraded: null, // graded result before saving
+    lastStudent: { name: '', roll: '' },
+    pendingResultId: null,
+    cameraStream: null,
+    alignTimer: null,
+    autoCaptureArmed: false,
+  };
+
+  // ---------- Screen routing ----------
+  function showScreen(name, { push = true } = {}) {
+    screens.forEach((s) => s.classList.toggle('active', s.dataset.screen === name));
+    if (push && history[history.length - 1] !== name) history.push(name);
+    if (name !== 'scanner') stopCamera();
+    window.scrollTo({ top: 0, behavior: 'instant' in window ? 'instant' : 'auto' });
+  }
+
+  function goBack() {
+    if (history.length > 1) history.pop();
+    const target = history[history.length - 1] || 'home';
+    showScreen(target, { push: false });
+    if (target === 'home') renderHome();
+  }
+
+  document.querySelectorAll('[data-back]').forEach((btn) => btn.addEventListener('click', goBack));
+
+  // ---------- Toast ----------
+  let toastTimer = null;
+  function showToast(message) {
+    const el = document.getElementById('toast');
+    el.textContent = message;
+    el.hidden = false;
+    el.classList.add('toast-visible');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => {
+      el.classList.remove('toast-visible');
+      setTimeout(() => (el.hidden = true), 250);
+    }, 2600);
+  }
+
+  // ================= HOME =================
+  function renderHome() {
+    const list = document.getElementById('test-list');
+    const empty = document.getElementById('test-list-empty');
+    const tests = OMRStorage.listTests();
+    list.innerHTML = '';
+    empty.hidden = tests.length > 0;
+
+    tests.forEach((test) => {
+      const row = document.createElement('button');
+      row.className = 'test-row glass-panel';
+      const date = new Date(test.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+      row.innerHTML = `
+        <div class="test-row-main">
+          <p class="test-row-name">${escapeHtml(test.name)}</p>
+          <p class="test-row-meta">${test.answerKey.length} questions · ${test.results.length} checked · ${date}</p>
+        </div>
+        <span class="test-row-chevron">›</span>
+      `;
+      row.addEventListener('click', () => openTestDetail(test.id));
+      list.appendChild(row);
+    });
+  }
+
+  document.getElementById('btn-start-test').addEventListener('click', () => {
+    document.getElementById('input-test-name').value = '';
+    document.getElementById('input-question-count').value = 10;
+    document.getElementById('input-option-count').value = '4';
+    document.getElementById('input-marks').value = 1;
+    document.getElementById('input-negative').value = 0;
+    showScreen('new-test');
+  });
+
+  // ================= NEW TEST =================
+  document.getElementById('btn-create-test').addEventListener('click', () => {
+    const name = document.getElementById('input-test-name').value.trim() || 'Untitled test';
+    const questionCount = clampInt(document.getElementById('input-question-count').value, 1, 120, 10);
+    const optionCount = clampInt(document.getElementById('input-option-count').value, 2, 6, 4);
+    const marksPerQuestion = Number(document.getElementById('input-marks').value) || 1;
+    const negativeMarking = Number(document.getElementById('input-negative').value) || 0;
+
+    const test = OMRStorage.createTest({ name, optionCount, marksPerQuestion, negativeMarking });
+    OMRStorage.updateTest(test.id, { answerKey: AnswerKey.blank(questionCount) });
+    state.activeTestId = test.id;
+    openAnswerKeyEditor(test.id);
+  });
+
+  function clampInt(val, min, max, fallback) {
+    const n = parseInt(val, 10);
+    if (Number.isNaN(n)) return fallback;
+    return Math.max(min, Math.min(max, n));
+  }
+
+  // ================= ANSWER KEY =================
+  function openAnswerKeyEditor(testId) {
+    state.activeTestId = testId;
+    const test = OMRStorage.getTest(testId);
+    document.getElementById('answerkey-title').textContent = test.name;
+    document.getElementById('question-paper-name').textContent = '';
+    renderAnswerKeyList(test);
+    showScreen('answerkey');
+  }
+
+  function renderAnswerKeyList(test) {
+    const container = document.getElementById('answerkey-list');
+    container.innerHTML = '';
+    const optionLabels = Array.from({ length: test.optionCount }, (_, i) => String.fromCharCode(65 + i));
+
+    test.answerKey.forEach((answer, index) => {
+      const row = document.createElement('div');
+      row.className = 'key-row glass-panel';
+      const optionsHtml = optionLabels
+        .map(
+          (label) =>
+            `<button type="button" class="option-chip ${answer === label ? 'selected' : ''}" data-index="${index}" data-label="${label}">${label}</button>`
+        )
+        .join('');
+      row.innerHTML = `<span class="key-row-number">Q${index + 1}</span><div class="option-chip-row">${optionsHtml}</div>`;
+      container.appendChild(row);
+    });
+
+    container.querySelectorAll('.option-chip').forEach((chip) => {
+      chip.addEventListener('click', () => {
+        const idx = Number(chip.dataset.index);
+        const label = chip.dataset.label;
+        const t = OMRStorage.getTest(state.activeTestId);
+        const current = t.answerKey[idx];
+        const nextValue = current === label ? null : label;
+        const nextKey = AnswerKey.setAnswer(t.answerKey, idx, nextValue);
+        OMRStorage.updateTest(state.activeTestId, { answerKey: nextKey });
+        renderAnswerKeyList(OMRStorage.getTest(state.activeTestId));
+        updateKeyProgress();
+      });
+    });
+
+    updateKeyProgress();
+  }
+
+  function updateKeyProgress() {
+    const test = OMRStorage.getTest(state.activeTestId);
+    if (!test) return;
+    const filled = test.answerKey.filter(Boolean).length;
+    document.getElementById('key-progress').textContent = `${filled} / ${test.answerKey.length}`;
+    document.getElementById('btn-approve-key').disabled = !AnswerKey.isComplete(test.answerKey);
+  }
+
+  document.getElementById('input-question-paper').addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (!QuestionParser.isAccepted(file)) {
+      showToast('Please upload a PNG, JPG, WEBP, or PDF.');
+      return;
+    }
+    document.getElementById('question-paper-name').textContent = file.name;
+    document.getElementById('parser-hint').textContent =
+      'Uploaded. AI answer suggestions are coming in a future update — approve every answer manually below.';
+    // Reserved for a future AI question-parsing backend; always null today.
+    await QuestionParser.proposeAnswerKey(file, OMRStorage.getTest(state.activeTestId)?.answerKey.length || 0);
+  });
+
+  document.getElementById('btn-download-template').addEventListener('click', () => {
+    const test = OMRStorage.getTest(state.activeTestId);
+    if (!test) return;
+    AnswerKey.downloadTemplate({
+      testName: test.name,
+      questionCount: test.answerKey.length,
+      optionCount: test.optionCount,
+    });
+  });
+
+  document.getElementById('btn-approve-key').addEventListener('click', () => {
+    const test = OMRStorage.getTest(state.activeTestId);
+    if (!AnswerKey.isComplete(test.answerKey)) {
+      showToast('Fill in every answer before approving.');
+      return;
+    }
+    OMRStorage.updateTest(state.activeTestId, { keyApproved: true });
+    showToast('Answer key approved.');
+    openScanner(state.activeTestId);
+  });
+
+  // ================= SCANNER =================
+  function openScanner(testId) {
+    state.activeTestId = testId;
+    document.getElementById('input-student-name').value = '';
+    document.getElementById('input-student-roll').value = '';
+    document.getElementById('scan-quality-banner').hidden = true;
+    showScreen('scanner');
+    startCamera();
+  }
+
+  async function startCamera() {
+    const video = document.getElementById('camera-feed');
+    const fallback = document.getElementById('camera-fallback');
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 1280 } },
+        audio: false,
+      });
+      state.cameraStream = stream;
+      video.srcObject = stream;
+      fallback.classList.remove('visible');
+      state.autoCaptureArmed = true;
+      runAlignmentLoop();
+    } catch (err) {
+      console.warn('Camera unavailable, falling back to file upload.', err);
+      fallback.classList.add('visible');
+      state.autoCaptureArmed = false;
+    }
+  }
+
+  function stopCamera() {
+    if (state.cameraStream) {
+      state.cameraStream.getTracks().forEach((t) => t.stop());
+      state.cameraStream = null;
+    }
+    clearTimeout(state.alignTimer);
+    state.autoCaptureArmed = false;
+  }
+
+  let consecutiveAligned = 0;
+  function runAlignmentLoop() {
+    if (!state.autoCaptureArmed) return;
+    const video = document.getElementById('camera-feed');
+    const meter = document.getElementById('align-meter-fill');
+    if (video.readyState >= 2 && video.videoWidth) {
+      const probe = document.createElement('canvas');
+      probe.width = 260;
+      probe.height = Math.round((260 * video.videoHeight) / video.videoWidth);
+      probe.getContext('2d').drawImage(video, 0, 0, probe.width, probe.height);
+      const data = probe.getContext('2d').getImageData(0, 0, probe.width, probe.height);
+      const score = ImageProcessor.quickAlignmentScore(data);
+      meter.style.width = `${Math.round(score * 100)}%`;
+      meter.classList.toggle('align-good', score > 0.55);
+
+      if (score > 0.55) {
+        consecutiveAligned++;
+        if (consecutiveAligned >= 6) {
+          consecutiveAligned = 0;
+          captureFromVideo();
+          return;
+        }
+      } else {
+        consecutiveAligned = 0;
+      }
+    }
+    state.alignTimer = setTimeout(runAlignmentLoop, 220);
+  }
+
+  function captureFromVideo() {
+    const video = document.getElementById('camera-feed');
+    const canvas = document.getElementById('capture-canvas');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+    handleCapturedCanvas(canvas);
+  }
+
+  document.getElementById('btn-capture').addEventListener('click', () => {
+    if (!state.cameraStream) {
+      showToast('Camera is off — choose a photo instead.');
+      return;
+    }
+    captureFromVideo();
+  });
+
+  document.getElementById('input-choose-photo').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.getElementById('capture-canvas');
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      canvas.getContext('2d').drawImage(img, 0, 0);
+      handleCapturedCanvas(canvas);
+    };
+    img.src = URL.createObjectURL(file);
+  });
+
+  async function handleCapturedCanvas(canvas) {
+    stopCamera();
+    state.lastStudent = {
+      name: document.getElementById('input-student-name').value.trim(),
+      roll: document.getElementById('input-student-roll').value.trim(),
+    };
+
+    const test = OMRStorage.getTest(state.activeTestId);
+    const banner = document.getElementById('scan-quality-banner');
+
+    try {
+      const scan = await OMRScanner.scan(canvas, test);
+      state.lastScan = scan;
+
+      if (scan.quality.warnings.length) {
+        banner.hidden = false;
+        banner.className = 'quality-banner warning';
+        banner.textContent = scan.quality.warnings.join(' ');
+      } else {
+        banner.hidden = true;
+      }
+
+      runLiveCheck(test, scan);
+    } catch (err) {
+      console.error(err);
+      banner.hidden = false;
+      banner.className = 'quality-banner error';
+      banner.textContent =
+        err.code === 'NO_MARKERS'
+          ? "Couldn't find all four corner markers. Keep the whole sheet in frame and try again."
+          : 'Could not read this sheet. Try a flatter, better-lit photo.';
+      startCamera();
+    }
+  }
+
+  // ================= LIVE CHECK =================
+  function runLiveCheck(test, scan) {
+    showScreen('livecheck');
+    const graded = GradingEngine.grade(scan.answers, test.answerKey, test);
+    state.lastGraded = graded;
+
+    const list = document.getElementById('live-check-list');
+    list.innerHTML = '';
+    document.getElementById('live-progress-total').textContent = graded.detail.length;
+    document.getElementById('live-progress-current').textContent = '0';
+    document.getElementById('live-progress-fill').style.width = '0%';
+
+    let i = 0;
+    const revealNext = () => {
+      if (i >= graded.detail.length) {
+        setTimeout(() => finishLiveCheck(test, scan, graded), 350);
+        return;
+      }
+      const d = graded.detail[i];
+      const row = document.createElement('div');
+      row.className = `live-row live-row-${d.outcome}`;
+      row.innerHTML = `<span class="live-q">Q${d.number}</span><span class="live-answer">${d.given || '—'}</span><span class="live-mark">${outcomeSymbol(d.outcome)}</span>`;
+      list.appendChild(row);
+      row.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+
+      i++;
+      document.getElementById('live-progress-current').textContent = i;
+      document.getElementById('live-progress-fill').style.width = `${(i / graded.detail.length) * 100}%`;
+      setTimeout(revealNext, 55 + Math.random() * 45);
+    };
+    revealNext();
+  }
+
+  function outcomeSymbol(outcome) {
+    if (outcome === 'correct') return '✓';
+    if (outcome === 'wrong') return '✕';
+    if (outcome === 'unanswered') return '—';
+    return '?';
+  }
+
+  function finishLiveCheck(test, scan, graded) {
+    const duplicate = OMRStorage.findDuplicate(test.id, scan.sheetHash);
+    const result = {
+      studentName: state.lastStudent.name,
+      studentRoll: state.lastStudent.roll,
+      answers: graded.detail.map((d) => ({ value: d.given, status: d.outcome, confidence: d.confidence })),
+      correct: graded.correct,
+      wrong: graded.wrong,
+      unanswered: graded.unanswered,
+      unclear: graded.unclear,
+      score: graded.score,
+      maxScore: graded.maxScore,
+      percentage: graded.percentage,
+      sheetHash: scan.sheetHash,
+    };
+
+    if (duplicate) {
+      const saved = OMRStorage.addResult(test.id, result);
+      state.pendingResultId = saved.id;
+      openResult(test.id, saved.id, graded, {
+        duplicateOf: duplicate.studentName || duplicate.studentRoll || 'a previous scan',
+      });
+    } else {
+      const saved = OMRStorage.addResult(test.id, result);
+      state.pendingResultId = saved.id;
+      openResult(test.id, saved.id, graded, null);
+    }
+  }
+
+  // ================= RESULT =================
+  function openResult(testId, resultId, graded, duplicateInfo) {
+    state.activeTestId = testId;
+    const test = OMRStorage.getTest(testId);
+    const result = test.results.find((r) => r.id === resultId);
+
+    document.getElementById('result-score').textContent = `${result.score} / ${result.maxScore}`;
+    document.getElementById('result-percentage').textContent = `${result.percentage}%`;
+    document.getElementById('stat-correct').textContent = result.correct;
+    document.getElementById('stat-wrong').textContent = result.wrong;
+    document.getElementById('stat-unclear').textContent = result.unclear + result.unanswered;
+
+    const dupBanner = document.getElementById('duplicate-banner');
+    if (duplicateInfo) {
+      dupBanner.hidden = false;
+      dupBanner.className = 'quality-banner warning';
+      dupBanner.textContent = `This sheet looks very similar to one already scanned (${escapeHtml(duplicateInfo.duplicateOf)}). Double-check it isn't a duplicate.`;
+    } else {
+      dupBanner.hidden = true;
+    }
+
+    renderResultList('result-list', test, result, true);
+    showScreen('result');
+  }
+
+  function renderResultList(containerId, test, result, editable) {
+    const container = document.getElementById(containerId);
+    container.innerHTML = '';
+    const optionLabels = Array.from({ length: test.optionCount }, (_, i) => String.fromCharCode(65 + i));
+
+    result.answers.forEach((a, index) => {
+      const correctAnswer = test.answerKey[index];
+      const row = document.createElement('div');
+      row.className = `result-row glass-panel result-row-${a.status}`;
+      const givenLabel = a.value || '—';
+      const showCorrection = a.status !== 'correct';
+      row.innerHTML = `
+        <div class="result-row-main">
+          <span class="result-q">Q${index + 1}</span>
+          <span class="result-given">${escapeHtml(givenLabel)}</span>
+          <span class="result-symbol">${outcomeSymbol(a.status)}</span>
+          ${showCorrection ? `<span class="result-correct-hint">Correct: ${escapeHtml(correctAnswer || '—')}</span>` : ''}
+        </div>
+        ${editable && showCorrection ? `<div class="result-correct-row" data-index="${index}">${optionLabels
+          .map((l) => `<button type="button" class="option-chip small" data-label="${l}">${l}</button>`)
+          .join('')}<button type="button" class="option-chip small ghost" data-label="">Blank</button></div>` : ''}
+      `;
+      container.appendChild(row);
+    });
+
+    if (editable) {
+      container.querySelectorAll('.result-correct-row').forEach((rowEl) => {
+        rowEl.querySelectorAll('.option-chip').forEach((chip) => {
+          chip.addEventListener('click', () => {
+            const index = Number(rowEl.dataset.index);
+            const label = chip.dataset.label || null;
+            correctAnswer(test.id, result.id, index, label);
+          });
+        });
+      });
+    }
+  }
+
+  function correctAnswer(testId, resultId, index, newValue) {
+    const test = OMRStorage.getTest(testId);
+    const result = test.results.find((r) => r.id === resultId);
+    const pseudoGraded = {
+      detail: result.answers.map((a, i) => ({
+        number: i + 1,
+        given: a.value,
+        outcome: a.status,
+        confidence: a.confidence,
+      })),
+    };
+    const corrected = GradingEngine.applyCorrection(pseudoGraded, index, newValue, test.answerKey, test);
+    const updatedResult = {
+      ...result,
+      answers: corrected.detail.map((d) => ({ value: d.given, status: d.outcome, confidence: d.confidence })),
+      correct: corrected.correct,
+      wrong: corrected.wrong,
+      unanswered: corrected.unanswered,
+      unclear: corrected.unclear,
+      score: corrected.score,
+      maxScore: corrected.maxScore,
+      percentage: corrected.percentage,
+    };
+    const idx = test.results.findIndex((r) => r.id === resultId);
+    test.results[idx] = updatedResult;
+    OMRStorage.updateTest(testId, { results: test.results });
+    showToast('Answer corrected.');
+    openResult(testId, resultId, corrected, null);
+  }
+
+  document.getElementById('btn-scan-another').addEventListener('click', () => {
+    openScanner(state.activeTestId);
+  });
+
+  document.getElementById('btn-new-test').addEventListener('click', () => {
+    document.getElementById('input-test-name').value = '';
+    showScreen('new-test');
+  });
+
+  // ================= TEST DETAIL =================
+  function openTestDetail(testId) {
+    state.activeTestId = testId;
+    const test = OMRStorage.getTest(testId);
+    document.getElementById('test-detail-title').textContent = test.name;
+    const summary = document.getElementById('test-detail-summary');
+    const avg = test.results.length
+      ? Math.round((test.results.reduce((s, r) => s + r.percentage, 0) / test.results.length) * 10) / 10
+      : 0;
+    summary.innerHTML = `
+      <p class="test-detail-line"><strong>${test.answerKey.length}</strong> questions · <strong>${test.optionCount}</strong> options · ${test.marksPerQuestion} mark(s) each${test.negativeMarking ? `, −${test.negativeMarking} for wrong` : ''}</p>
+      <p class="test-detail-line">${test.results.length} sheet(s) checked${test.results.length ? ` · class average ${avg}%` : ''}</p>
+      <p class="test-detail-line ${test.keyApproved ? 'ok' : 'warn'}">${test.keyApproved ? 'Answer key approved' : 'Answer key not yet approved'}</p>
+    `;
+
+    const list = document.getElementById('test-detail-results');
+    list.innerHTML = '';
+    if (!test.results.length) {
+      list.innerHTML = '<p class="empty-hint">No sheets checked yet for this test.</p>';
+    }
+    test.results
+      .slice()
+      .reverse()
+      .forEach((r) => {
+        const row = document.createElement('button');
+        row.className = 'test-row glass-panel';
+        const who = r.studentName || r.studentRoll ? `${r.studentName || ''} ${r.studentRoll ? `#${r.studentRoll}` : ''}`.trim() : 'Unnamed sheet';
+        row.innerHTML = `
+          <div class="test-row-main">
+            <p class="test-row-name">${escapeHtml(who)}</p>
+            <p class="test-row-meta">${r.score} / ${r.maxScore} · ${r.percentage}%</p>
+          </div>
+          <span class="test-row-chevron">›</span>
+        `;
+        row.addEventListener('click', () => {
+          openResult(test.id, r.id, { detail: [] }, null);
+        });
+        list.appendChild(row);
+      });
+
+    showScreen('test-detail');
+  }
+
+  document.getElementById('btn-detail-scan').addEventListener('click', () => openScanner(state.activeTestId));
+  document.getElementById('btn-detail-template').addEventListener('click', () => {
+    const test = OMRStorage.getTest(state.activeTestId);
+    AnswerKey.downloadTemplate({ testName: test.name, questionCount: test.answerKey.length, optionCount: test.optionCount });
+  });
+
+  // ---------- utils ----------
+  function escapeHtml(str) {
+    return String(str || '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+
+  // ---------- init ----------
+  renderHome();
+  showScreen('home', { push: false });
+
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('service-worker.js').catch((err) => console.warn('SW registration failed', err));
+    });
+  }
+})();
+
+</script>
 </body>
 </html>
